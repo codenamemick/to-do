@@ -26,6 +26,16 @@ def clear_status_cache():
     StatusCache.clear()
 
 # Sets default colours of statuses
+def query_incomplete_tasks(exclude_id=None):
+    """Return all non-deleted, incomplete tasks, optionally excluding one task by ID."""
+    filters = [Task.deleted == False]
+    if exclude_id is not None:
+        filters.append(Task.id != exclude_id)
+    tasks = Task.query.filter(*filters).all()
+    return [t for t in tasks if t.status != 'Complete']
+
+
+# Source of truth for status colors — keep in sync with :root variables in index.html
 STATUS_COLORS = {
         'Free':       '#2196f3',
         'Blocked':    '#c62828',
@@ -34,17 +44,6 @@ STATUS_COLORS = {
         'Goal':       '#9300ef',
         'Recurring':  '#00897b',
         'Complete':   '#4caf50',
-    }
-
-# Sets default (lighter) colours of statuses
-STATUS_COLORS_LIGHT = {
-        'Free':       '#e3f2fd',
-        'Blocked':    '#ffebee',
-        'Awaiting':   '#eeeeee',
-        'Event':      '#fff3e0',
-        'Goal':       '#f3e5f5',
-        'Recurring':  '#e0f2f1',
-        'Complete':   '#e8f5e9',
     }
 
 def sort_actions_tasks(tasks):
@@ -117,38 +116,18 @@ def sort_actions_tasks(tasks):
     return result
 
 
-def sort_awaiting_tasks(tasks):
+def sort_tasks_by_status(tasks, status):
     """
-    Sort tasks for the Awaiting column:
-    Sort by dependencies ASC, then dependents DESC
+    Sort tasks for the Awaiting or Blocked column:
+    Sort by dependencies ASC, then dependents DESC, then title.
     """
-    awaiting_tasks = [t for t in tasks if t.status == 'Awaiting']
+    filtered = [t for t in tasks if t.status == status]
 
-    if not awaiting_tasks:
+    if not filtered:
         return []
 
-    def get_priority(task):
-        return (task.upstream_count, -task.downstream_count, task.title.lower())
-
-    awaiting_tasks.sort(key=get_priority)
-    return awaiting_tasks
-
-
-def sort_blocked_tasks(tasks):
-    """
-    Sort tasks for the Blocked column:
-    Sort by dependencies ASC, then dependents DESC
-    """
-    blocked_tasks = [t for t in tasks if t.status == 'Blocked']
-
-    if not blocked_tasks:
-        return []
-
-    def get_priority(task):
-        return (task.upstream_count, -task.downstream_count, task.title.lower())
-
-    blocked_tasks.sort(key=get_priority)
-    return blocked_tasks
+    filtered.sort(key=lambda t: (t.upstream_count, -t.downstream_count, t.title.lower()))
+    return filtered
 
 
 # Home
@@ -159,11 +138,9 @@ def home():
     # Sort action tasks with complex ordering
     actions_sorted = sort_actions_tasks(tasks)
 
-    # Sort awaiting tasks
-    awaiting_sorted = sort_awaiting_tasks(tasks)
-
-    # Sort blocked tasks
-    blocked_sorted = sort_blocked_tasks(tasks)
+    # Sort awaiting and blocked tasks
+    awaiting_sorted = sort_tasks_by_status(tasks, 'Awaiting')
+    blocked_sorted = sort_tasks_by_status(tasks, 'Blocked')
 
     # Sort goal tasks by (downstream_count - upstream_count) DESC
     goals_sorted = sorted(
@@ -586,13 +563,7 @@ def get_dependencies_data(task_id):
     """Return all incomplete tasks with info on whether they are dependencies of the given task."""
     task = Task.query.get_or_404(task_id)
 
-    # All incomplete, non-deleted tasks except this task
-    all_tasks = Task.query.filter(
-        Task.deleted == False,
-        Task.id != task_id
-    ).all()
-
-    incomplete_tasks = [t for t in all_tasks if t.status != 'Complete']
+    incomplete_tasks = query_incomplete_tasks(exclude_id=task_id)
 
     # IDs of tasks this task depends on
     dependency_ids = {dep.depends_on_id for dep in task.dependencies}
@@ -620,14 +591,7 @@ def get_dependents_data(task_id):
     """Return all incomplete tasks with info on whether they depend on the given task."""
     target_task = Task.query.get_or_404(task_id)
 
-    # Get all incomplete, non-deleted tasks (excluding the target task itself)
-    all_tasks = Task.query.filter(
-        Task.deleted == False,
-        Task.id != task_id
-    ).all()
-
-    # Filter to incomplete tasks only
-    incomplete_tasks = [t for t in all_tasks if t.status != 'Complete']
+    incomplete_tasks = query_incomplete_tasks(exclude_id=task_id)
 
     # Get IDs of tasks that directly depend on the target task
     dependent_ids = {dep.task_id for dep in target_task.dependents}
@@ -650,10 +614,7 @@ def get_dependents_data(task_id):
 @app.route("/api/tasks/incomplete")
 def get_incomplete_tasks():
     """Return all incomplete, non-deleted tasks for dependency selection."""
-    all_tasks = Task.query.filter_by(deleted=False).all()
-
-    # Filter to incomplete tasks only
-    incomplete_tasks = [t for t in all_tasks if t.status != 'Complete']
+    incomplete_tasks = query_incomplete_tasks()
 
     tasks_data = []
     for task in incomplete_tasks:
@@ -675,8 +636,7 @@ def search_tasks():
     query = request.args.get('q', '').strip().lower()
 
     # Get all non-deleted, incomplete tasks
-    all_tasks = Task.query.filter_by(deleted=False).all()
-    incomplete_tasks = [t for t in all_tasks if t.status != 'Complete']
+    incomplete_tasks = query_incomplete_tasks()
 
     # Filter tasks that match the query (case-insensitive title search)
     if query:

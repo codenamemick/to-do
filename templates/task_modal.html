@@ -142,25 +142,6 @@
     .dependency-list li.dep-status-Recurring { background: #e0f2f1; color: #00695c; }
     .dependency-list li.dep-status-Complete { background: #e8f5e9; color: #2e7d32; }
 
-    /* Compact buttons */
-    .modal-btn {
-      padding: 8px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .modal-btn-primary { background: #2196f3; color: white; }
-    .modal-btn-primary:hover { background: #1976d2; }
-    .modal-btn-secondary { background: #f0f0f0; color: #333; }
-    .modal-btn-secondary:hover { background: #e0e0e0; }
-    .modal-btn-success { background: #4caf50; color: white; }
-    .modal-btn-success:hover { background: #43a047; }
-    .modal-btn-danger { background: #ff5252; color: white; }
-    .modal-btn-danger:hover { background: #e53935; }
-    .modal-btn:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; }
 
     .button-row {
       display: flex;
@@ -373,7 +354,7 @@
                     <div style="display:flex; justify-content:center; margin-top:12px;">
                         <button
                             type="button"
-                            class="modal-btn modal-btn-secondary"
+                            class="btn btn-secondary"
                             onclick="viewTaskOnGraph({{ task.id }})"
                         >
                             View on flowchart
@@ -525,17 +506,17 @@
 
         <!-- Edit form buttons -->
         <div class="button-row">
-            <button type="submit" class="modal-btn modal-btn-primary">
+            <button type="submit" class="btn btn-primary">
                 Save
             </button>
 
-            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">
                 Cancel
             </button>
 
             <button
                 type="button"
-                class="modal-btn modal-btn-success"
+                class="btn btn-success"
                 onclick="quickComplete({{ task.id }})"
                 {% if task.status == 'Complete' %}disabled{% endif %}>
                 Complete
@@ -543,7 +524,7 @@
 
             <button
                 type="button"
-                class="modal-btn modal-btn-danger"
+                class="btn btn-danger"
                 onclick="quickDelete({{ task.id }})">
                 Delete
             </button>

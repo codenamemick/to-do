@@ -491,16 +491,7 @@
     }
     .dependents-close-btn {
       margin-top: 12px;
-      padding: 8px 16px;
-      background: #f0f0f0;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
       align-self: flex-end;
-    }
-    .dependents-close-btn:hover {
-      background: #e0e0e0;
     }
     .complete-btn {
       width: 16px;
@@ -1026,19 +1017,6 @@
     }
 
     /* Modal buttons */
-    .modal-btn {
-      padding: 8px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .modal-btn-primary { background: #2196f3; color: white; }
-    .modal-btn-primary:hover { background: #1976d2; }
-    .modal-btn-secondary { background: #f0f0f0; color: #333; }
-    .modal-btn-secondary:hover { background: #e0e0e0; }
 
     .button-row {
       display: flex;
@@ -1318,10 +1296,10 @@
 
         <!-- Buttons -->
         <div class="button-row">
-            <button type="submit" class="modal-btn modal-btn-primary">
+            <button type="submit" class="btn btn-primary">
                 Create Task
             </button>
-            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">
                 Cancel
             </button>
         </div>
@@ -1392,11 +1370,6 @@
             <span class="task-label label-deadline">{{ task.deadline.strftime('%b %d') }}</span>
           {% endif %}
         {% endif %}
-        <!--commenting out duration label 
-        {% if task.estimated_duration %}
-          <span class="task-label label-duration">{{ task.estimated_duration }}h</span>
-        {% endif %}
-        -->
 
         {% set downstream_goals = task.get_downstream_goals() %}
         {% for goal in downstream_goals %}
@@ -1543,33 +1516,6 @@
           </div>
         </div>
         
-        <!-- commenting out complete column
-        <div class="kanban-column" data-status="Complete">
-          <div class="kanban-column-header">
-            <h4>Complete</h4>
-            <p class="kanban-column-desc">Finished tasks</p>
-          </div>
-          <div class="kanban-column-body">
-            <ul>
-              {% for task in tasks|selectattr('status', 'equalto', 'Complete')|sort(attribute='completed_datetime', reverse=true) %}
-              <li data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
-                <div class="kanban-card-header">
-                  <span class="task-title">{{ task.title }}</span>
-                </div>
-                <div class="kanban-card-labels">
-                  {% if task.completed_datetime %}
-                    <span class="task-label label-completed">{{ task.completed_datetime.strftime('%b %d %H:%M') }}</span>
-                  {% endif %}
-                </div>
-                <div class="kanban-card-footer">
-                  <button class="delete-btn" onclick="event.stopPropagation(); quickDelete({{ task.id }})" title="Delete">🗑</button>
-                </div>
-              </li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-        -->
         
       </div>
     </div>
@@ -1771,7 +1717,7 @@
   <ul class="dependents-list" id="dependents-list">
     <!-- Populated by JavaScript -->
   </ul>
-  <button class="dependents-close-btn" onclick="closeDependentsPopup()">Close</button>
+  <button class="btn btn-secondary dependents-close-btn" onclick="closeDependentsPopup()">Close</button>
 </div>
 
 <!-- Create Task Dependencies Popup Modal -->
@@ -1786,7 +1732,7 @@
   <ul class="dependents-list" id="create-deps-list">
     <!-- Populated by JavaScript -->
   </ul>
-  <button class="dependents-close-btn" onclick="closeCreateDependenciesPopup()">Done</button>
+  <button class="btn btn-secondary dependents-close-btn" onclick="closeCreateDependenciesPopup()">Done</button>
 </div>
 
 <!-- Create Task Dependents Popup Modal -->
@@ -1801,7 +1747,7 @@
   <ul class="dependents-list" id="create-dependents-list">
     <!-- Populated by JavaScript -->
   </ul>
-  <button class="dependents-close-btn" onclick="closeCreateDependentsPopup()">Done</button>
+  <button class="btn btn-secondary dependents-close-btn" onclick="closeCreateDependentsPopup()">Done</button>
 </div>
 
 <!-- FullCalendar -->
@@ -1835,6 +1781,40 @@
   let calendarInstance = null;
 
   document.addEventListener('DOMContentLoaded', function() {
+    // Habit schedule toggle
+    const scheduleSelect = document.getElementById('habit-schedule');
+    if (scheduleSelect) {
+      scheduleSelect.addEventListener('change', function() {
+        const daysContainer = document.getElementById('habit-days-container');
+        daysContainer.style.display = this.value === 'weekly' ? 'block' : 'none';
+      });
+    }
+
+    // Kanban drag and drop
+    initKanbanDragDrop();
+
+    // Restore pending complete toast (set before page reload)
+    const pendingToast = localStorage.getItem('pendingToast');
+    if (pendingToast) {
+      const toastData = JSON.parse(pendingToast);
+      if (Date.now() - toastData.timestamp < 5000) {
+        lastCompletedTaskId = toastData.taskId;
+        showToast();
+      }
+      localStorage.removeItem('pendingToast');
+    }
+
+    // Restore pending delete toast (set before page reload)
+    const pendingDeleteToast = localStorage.getItem('pendingDeleteToast');
+    if (pendingDeleteToast) {
+      const toastData = JSON.parse(pendingDeleteToast);
+      if (Date.now() - toastData.timestamp < 5000) {
+        lastDeletedTaskId = toastData.taskId;
+        showDeleteToast();
+      }
+      localStorage.removeItem('pendingDeleteToast');
+    }
+
     // Initialize FullCalendar
     calendarInstance = new FullCalendar.Calendar(document.getElementById('calendar'), {
       initialView: 'dayGridMonth',
@@ -1960,14 +1940,16 @@
 
   // ========== D3 Flowchart Functions ==========
 
+  // Derived from :root CSS variables — edit colors there, not here
+  const _cs = getComputedStyle(document.documentElement);
   const STATUS_COLORS = {
-    'Free': '#2196f3',
-    'Blocked': '#c62828',
-    'Awaiting': '#757575',
-    'Event': '#da8f1f',
-    'Goal': '#9300ef',
-    'Recurring': '#00897b',
-    'Complete': '#4caf50'
+    'Free':      _cs.getPropertyValue('--status-free').trim(),
+    'Blocked':   _cs.getPropertyValue('--status-blocked').trim(),
+    'Awaiting':  _cs.getPropertyValue('--status-awaiting').trim(),
+    'Event':     _cs.getPropertyValue('--status-event').trim(),
+    'Goal':      _cs.getPropertyValue('--status-goal').trim(),
+    'Recurring': _cs.getPropertyValue('--status-recurring').trim(),
+    'Complete':  _cs.getPropertyValue('--status-complete').trim(),
   };
 
   async function refreshFlowchart() {
@@ -2426,10 +2408,7 @@
     document.getElementById('habit-modal').style.display = 'block';
   }
 
-  async function deleteHabitFromModal() {
-    const habitId = document.getElementById('habit-id').value;
-    if (!habitId) return;
-
+  async function deleteHabit(habitId, fromModal = false) {
     if (!confirm('Are you sure you want to delete this habit? This action cannot be undone.')) {
       return;
     }
@@ -2440,7 +2419,7 @@
       });
 
       if (response.ok) {
-        closeHabitModal();
+        if (fromModal) closeHabitModal();
         habitsLoaded = false;
         loadHabits();
       } else {
@@ -2453,27 +2432,10 @@
     }
   }
 
-  async function deleteHabit(habitId) {
-    if (!confirm('Are you sure you want to delete this habit? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/habits/${habitId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        habitsLoaded = false;
-        loadHabits();
-      } else {
-        const error = await response.json();
-        alert('Error deleting habit: ' + (error.message || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error deleting habit:', error);
-      alert('Error deleting habit. Please try again.');
-    }
+  function deleteHabitFromModal() {
+    const habitId = document.getElementById('habit-id').value;
+    if (!habitId) return;
+    deleteHabit(habitId, true);
   }
 
   // --- Habit Modal Functions ---
@@ -2522,15 +2484,6 @@
   }
 
   // Toggle days of week based on frequency selection
-  document.addEventListener('DOMContentLoaded', function() {
-    const scheduleSelect = document.getElementById('habit-schedule');
-    if (scheduleSelect) {
-      scheduleSelect.addEventListener('change', function() {
-        const daysContainer = document.getElementById('habit-days-container');
-        daysContainer.style.display = this.value === 'weekly' ? 'block' : 'none';
-      });
-    }
-  });
 
   async function saveHabit(event) {
     event.preventDefault();
@@ -4629,9 +4582,6 @@
   let draggedTaskId = null;
   let draggedSourceStatus = null;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    initKanbanDragDrop();
-  });
 
   function initKanbanDragDrop() {
     // Add drag event listeners to draggable items
@@ -4708,18 +4658,6 @@
   let toastTimeout = null;
 
   // Check for pending toast on page load
-  document.addEventListener('DOMContentLoaded', function() {
-    const pendingToast = localStorage.getItem('pendingToast');
-    if (pendingToast) {
-      const toastData = JSON.parse(pendingToast);
-      // Check if toast is still valid (within 5 seconds)
-      if (Date.now() - toastData.timestamp < 5000) {
-        lastCompletedTaskId = toastData.taskId;
-        showToast();
-      }
-      localStorage.removeItem('pendingToast');
-    }
-  });
 
   // Task modal functions (need to be in global scope for dynamically loaded modal)
   async function quickComplete(taskId) {
@@ -4791,17 +4729,6 @@
   let deleteToastTimeout = null;
 
   // Check for pending delete toast on page load
-  document.addEventListener('DOMContentLoaded', function() {
-    const pendingDeleteToast = localStorage.getItem('pendingDeleteToast');
-    if (pendingDeleteToast) {
-      const toastData = JSON.parse(pendingDeleteToast);
-      if (Date.now() - toastData.timestamp < 5000) {
-        lastDeletedTaskId = toastData.taskId;
-        showDeleteToast();
-      }
-      localStorage.removeItem('pendingDeleteToast');
-    }
-  });
 
   async function quickDelete(taskId) {
     try {
