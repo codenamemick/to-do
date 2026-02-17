@@ -1,0 +1,5668 @@
+<!doctype html>
+<html>
+<head>
+  <title>PM Tool</title>
+
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    :root {
+      --status-free:      #2196f3;
+      --status-blocked:   #c62828;
+      --status-awaiting:  #757575;
+      --status-event:     #da8f1f;
+      --status-goal:      #9300ef;
+      --status-recurring: #00897b;
+      --status-complete:  #4caf50;
+    }
+
+
+
+
+    body {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1a1a1a;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    /* Modal Base Styles */
+    .modal {
+      width: 700px;
+      max-width: 90vw;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.1);
+      z-index: 1000;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Wider task modal for two-column layout */
+    #task-modal {
+      width: 700px;
+    }
+
+    .modal h2 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .task-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .task-form label {
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+      gap: 6px;
+    }
+
+    .task-form input[type="text"],
+    .task-form input[type="number"],
+    .task-form input[type="datetime-local"],
+    .task-form input[type="date"],
+    .task-form input:not([type]),
+    .task-form textarea,
+    .task-form select {
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      color: #1a1a1a;
+    }
+
+    .task-form input:focus,
+    .task-form textarea:focus,
+    .task-form select:focus {
+      outline: none;
+      border-color: #2196f3;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    .task-form textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .task-form .checkbox {
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      font-weight: 400;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .task-form .checkbox input[type="checkbox"],
+    .task-form .checkbox input[type="radio"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #2196f3;
+      cursor: pointer;
+    }
+
+    /* Field value display (view mode) */
+    .field-value {
+      padding: 10px 12px;
+      background: #f5f7f9;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1a1a1a;
+      font-weight: 400;
+      min-height: 20px;
+    }
+
+    /* Recurring options panel */
+    .recurring-options {
+      background: #f5f7f9;
+      padding: 16px;
+      border-radius: 10px;
+      margin-top: 4px;
+      border: 1px solid #eee;
+    }
+
+    /* Button styles */
+    .btn {
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #2196f3;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1976d2;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-success {
+      background: #4caf50;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #43a047;
+    }
+
+    .btn-danger {
+      background: #ff5252;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #e53935;
+    }
+
+    .btn:disabled {
+      background: #e0e0e0;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    /* Habit checkmark styles */
+    .habit-check:hover {
+      transform: scale(1.1);
+      border-color: #4caf50 !important;
+    }
+    .habit-check.completed:hover {
+      background: #43a047 !important;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+
+    .actions-spread {
+      justify-content: space-between;
+    }
+
+    .actions-end {
+      justify-content: flex-end;
+    }
+
+    #kanban-view > div > div {
+      border: 1px solid #ccc;
+      padding: 8px;
+      width: 150px;
+      background: #fafafa;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0.3px;
+    }
+    .status-Free       { background: #e3f2fd; color: #2196f3; }
+    .status-Blocked    { background: #ffebee; color: #c62828; }
+    .status-Awaiting   { background: #eeeeee; color: #757575; }
+    .status-Event      { background: #fff3e0; color: #da8f1f; }
+    .status-Goal       { background: #f3e5f5; color: #9300ef; }
+    .status-Recurring  { background: #e0f2f1; color: #00897b; }
+    .status-Complete   { background: #e8f5e9; color: #4caf50; }
+
+
+    .kanban-column {
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+    .kanban-column-header {
+      padding: 10px;
+      text-align: center;
+    }
+    .kanban-column-header h4 {
+      font-size: 1rem;   /* try 1.3–1.6rem */
+      margin: 0 0 0px 0;
+      color: #fff;
+    }
+    .kanban-column-header .kanban-column-desc {
+      margin: 0;
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+    }
+    .kanban-column-body {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .kanban-column-body ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Status-specific column colors */
+    .kanban-column[data-status="Free"] .kanban-column-header { background: var(--status-free); }
+    .kanban-column[data-status="Free"] .kanban-column-body { background: #e3f2fd; }
+
+    .kanban-column[data-status="Awaiting"] .kanban-column-header { background: var(--status-awaiting); }
+    .kanban-column[data-status="Awaiting"] .kanban-column-body { background: #eeeeee; }
+
+    .kanban-column[data-status="Blocked"] .kanban-column-header { background: var(--status-blocked); }
+    .kanban-column[data-status="Blocked"] .kanban-column-body { background: #ffebee; }
+
+    .kanban-column[data-status="Event"] .kanban-column-header { background: var(--status-event); }
+    .kanban-column[data-status="Event"] .kanban-column-body { background: #fff3e0; }
+
+    .kanban-column[data-status="Recurring"] .kanban-column-header { background: var(--status-recurring); }
+    .kanban-column[data-status="Recurring"] .kanban-column-body { background: #e0f2f1; }
+
+    .kanban-column[data-status="Goal"] .kanban-column-header { background: var(--status-goal); }
+    .kanban-column[data-status="Goal"] .kanban-column-body { background: #f3e5f5; }
+
+    .kanban-column[data-status="Complete"] .kanban-column-header { background: var(--status-complete); }
+    .kanban-column[data-status="Complete"] .kanban-column-body { background: #e8f5e9; }
+
+    .kanban-column li {
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      gap: 6px;
+    }
+    .kanban-column li:hover {
+      border-color: #999;
+    }
+    .kanban-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .kanban-column li .task-title {
+      flex: 1;
+    }
+    .kanban-card-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .task-label {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .label-scheduled {
+      background: #e3f2fd; 
+      color: #1565c0;
+    }
+    .label-deadline {
+      background: #fce4ec;
+      color: #c2185b;
+    }
+    .label-overdue {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .label-due-soon {
+      background: #fff3e0;
+      color: #ef6c00;
+    }
+    .label-duration {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+    .label-dependents {
+      background: #efefef;
+      color: #2f2f2f;
+    }
+    .label-dependencies {
+      background: #efefef;
+      color: #2f2f2f;
+    }
+    .label-completed {
+      background: #e8f5e9;
+      color: #4caf50;
+    }
+    .label-goal {
+      background: #f3e5f5;
+      color: #9300ef;
+    }
+    .label-dependents {
+      cursor: pointer;
+    }
+    .label-dependents:hover {
+      background: #c8e6c9;
+    }
+
+    /* Dependents Popup Modal */
+
+    .dependent-task-status {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+
+    .dependents-modal {
+      width: 400px;
+      max-width: 90vw;
+      max-height: 80vh;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.1);
+      z-index: 1001;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+    }
+    .dependents-modal h3 {
+      margin: 0 0 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .dependents-search {
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+      margin-bottom: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .dependents-search:focus {
+      outline: none;
+      border-color: #2196f3;
+      background: #fff;
+    }
+    .dependents-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+    .dependents-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dependents-list li:hover {
+      background: #f5f5f5;
+    }
+    .dependents-list li.is-dependent {
+      background: #e8f5e9;
+    }
+    .dependents-list li.is-dependent:hover {
+      background: #c8e6c9;
+    }
+    .dependent-checkbox {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #999;
+      background: transparent;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dependent-checkbox.checked {
+      background: #4caf50;
+      border-color: #4caf50;
+    }
+    .dependent-checkbox.checked::after {
+      content: '✓';
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .dependent-task-title {
+      flex: 1;
+      font-size: 14px;
+      color: #333;
+    }
+    .dependent-task-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .dependents-section-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 10px 4px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 4px;
+    }
+    .dependents-close-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      align-self: flex-end;
+    }
+    .dependents-close-btn:hover {
+      background: #e0e0e0;
+    }
+    .complete-btn {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #6d6d6d;
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    .complete-btn:hover {
+      background: #e0e0e0;
+    }
+    .kanban-card-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .delete-btn {
+      width: 20px;
+      height: 20px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+      opacity: 0.4;
+      font-size: 14px;
+      transition: opacity 0.15s;
+    }
+    .delete-btn:hover {
+      opacity: 1;
+    }
+    .kanban-column li.dragging {
+      opacity: 0.5;
+    }
+    .kanban-column.drag-over {
+      background: #e3f2fd;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 2000;
+      display: none;
+      font-size: 14px;
+    }
+    .toast a {
+      color: #64b5f6;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .toast a:hover {
+      color: #90caf9;
+    }
+    .toast .undo-link {
+      margin-left: 12px;
+      color: #81c784;
+      font-weight: 600;
+    }
+
+    .view-toggle-group {
+      display: flex;
+      gap: 4px;
+    }
+    .view-toggle-group button {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+    }
+    .view-toggle-group button.active {
+      background: #2196f3;
+      color: #fff;
+      border-color: #2196f3;
+    }
+
+    #flowchart-container {
+      width: 100%;
+      flex: 1;
+      min-height: 400px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fafafa;
+    }
+
+    #flowchart-container svg {
+      display: block;
+    }
+
+    .flowchart-controls button {
+      padding: 4px 12px;
+      font-size: 15px;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .flowchart-controls button:hover {
+      background: #f0f0f0;
+    }
+
+    .graph-legend {
+      display: flex;
+      gap: 16px;
+      padding: 8px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+
+    .graph-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .graph-legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    /* Flowchart interaction styles */
+    .node-connector {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .node:hover .node-connector {
+      opacity: 1;
+    }
+    .alignment-guide {
+      pointer-events: none;
+    }
+    .edge-preview {
+      pointer-events: none;
+    }
+    .port-handle {
+      transition: fill 0.15s;
+    }
+    .port-handle:hover {
+      fill: #64b5f6 !important;
+    }
+    .edge-selected {
+      filter: drop-shadow(0 0 3px rgba(33, 150, 243, 0.5));
+    }
+    .segment-handle {
+      transition: r 0.15s, fill 0.15s;
+    }
+    .segment-handle:hover {
+      r: 8;
+      fill: #e3f2fd !important;
+    }
+
+    .graph-zoom-controls {
+      display: flex;
+      gap: 4px;
+    }
+    .graph-zoom-controls button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .graph-zoom-controls button:hover {
+      background: #f0f0f0;
+    }
+    .graph-zoom-controls button:last-child {
+      width: auto;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+
+    <!--Calendar CSS-->
+
+      /* =========================
+    FullCalendar – App Theme
+    ========================= */
+
+    #calendar {
+      background: #ffffff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    /* ---------- Header ---------- */
+
+    /* ---------- Compact calendar header buttons ---------- */
+
+    .fc-toolbar {
+      gap: 8px;
+    }
+
+    .fc-button {
+      padding: 4px 8px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+      border-radius: 6px !important;
+      line-height: 1.2 !important;
+      min-height: auto !important;
+    }
+
+    .fc-button-group .fc-button {
+      border-radius: 2px !important;
+    }
+
+    /* Remove extra visual weight */
+    .fc-button {
+      box-shadow: none !important;
+    }
+
+    /* Prev / Next arrows tighter */
+    .fc-prev-button,
+    .fc-next-button {
+      padding: 4px 6px !important;
+      width: auto !important;
+    }
+
+    /* Today button less dominant */
+    .fc-today-button {
+      background: transparent !important;
+      border: 1px solid #ddd !important;
+      color: #666 !important;
+    }
+
+    .fc-today-button:hover {
+      background: #f5f7f9 !important;
+    }
+
+
+    .fc-button-primary {
+      background: #2196f3 !important;
+      border-color: #2196f3 !important;
+      color: #fff !important;
+    }
+
+    .fc-button-primary:hover {
+      background: #1976d2 !important;
+    }
+
+    .fc-button:disabled {
+      background: #f0f0f0 !important;
+      color: #999 !important;
+    }
+
+    /* ---------- Day headers ---------- */
+
+    .fc-col-header-cell {
+      background: #fafafa;
+      border-bottom: 1px solid #eee;
+      padding: 8px 0;
+    }
+
+    .fc-col-header-cell-cushion {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+    }
+
+    /* ---------- Day grid ---------- */
+
+    .fc-daygrid-day {
+      background: #fff;
+      border: 1px solid #eee;
+    }
+
+    .fc-daygrid-day:hover {
+      background: #f5f7f9;
+    }
+
+    /* Today highlight */
+    .fc-day-today {
+      background: #e3f2fd !important;
+    }
+
+    /* Remove heavy default shading */
+    .fc-day-other {
+      background: #fff;
+      opacity: 0.6;
+    }
+
+    /* ---------- Events ---------- */
+
+    .fc-event {
+      border-radius: 6px;
+      border: none;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .fc-event-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Hover = subtle lift */
+    .fc-event:hover {
+      filter: brightness(0.95);
+    }
+
+    /* Hide colored dot indicator in month view - show as colored block instead */
+    .fc-daygrid-event-dot {
+      display: none;
+    }
+
+    /* Make month view events display as colored blocks */
+    .fc-daygrid-event {
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* ---------- Time grid (week/day) ---------- */
+
+    .fc-timegrid-slot {
+      border-color: #eee;
+    }
+
+    .fc-timegrid-slot-label {
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* Now indicator */
+    .fc-now-indicator-line {
+      border-color: #2196f3;
+    }
+
+    /* ---------- Popover ("+ more") ---------- */
+
+    .fc-popover {
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    }
+
+    .fc-popover-header {
+      background: #f5f7f9;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* ---------- General cleanup ---------- */
+
+    .fc-scrollgrid {
+      border: none;
+    }
+
+    .fc-scrollgrid-section > td {
+      border: none;
+    }
+
+    /* Two-column modal layout */
+    .modal-two-column {
+      display: flex;
+      gap: 0;
+    }
+    .modal-main-column {
+      flex: 1;
+      padding-right: 20px;
+    }
+    .modal-side-column {
+      width: 200px;
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Side column field styling */
+    .side-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .side-field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #555555;
+      text-transform: none;
+      letter-spacing: 0.3px;
+    }
+    .side-field input[type="datetime-local"],
+    .side-field input[type="number"] {
+      padding: 6px 8px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .side-field input:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+
+    /* View field styling */
+    .view-field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #505050;
+      text-transform: none;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+    }
+    .view-field-value {
+      padding: 6px 10px;
+      background: #f5f7f9;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1a1a1a;
+      min-height: 14px;
+    }
+
+    .edit-link {
+      color: #2196f3;
+      cursor: pointer;
+    }
+
+    .dependency-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .dependency-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: #f5f7f9;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: filter 0.15s;
+    }
+    .dependency-list li:hover {
+      filter: brightness(0.95);
+    }
+    /* Status-based colors for dependency list items */
+    .dependency-list li.dep-status-Free { background: #e3f2fd; color: #1565c0; }
+    .dependency-list li.dep-status-Blocked { background: #ffebee; color: #c62828; }
+    .dependency-list li.dep-status-Awaiting { background: #eeeeee; color: #616161; }
+    .dependency-list li.dep-status-Event { background: #fff3e0; color: #e65100; }
+    .dependency-list li.dep-status-Goal { background: #f3e5f5; color: #7b1fa2; }
+    .dependency-list li.dep-status-Recurring { background: #e0f2f1; color: #00695c; }
+    .dependency-list li.dep-status-Complete { background: #e8f5e9; color: #2e7d32; }
+
+    /* Compact checkbox styling for top-right section */
+    .side-checkbox-compact {
+      display: grid !important;
+      grid-template-columns: 1fr 16px;
+      align-items: center !important;
+      font-size: 12px !important;
+      color: #555555 !important;
+      cursor: pointer;
+      gap: 13px !important;
+      margin-top: 0 !important;
+    }
+    .side-checkbox-compact input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #2196f3;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    /* Side checkbox styling */
+    .side-checkbox {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      font-size: 12px !important;
+      color: #555555 !important;
+      cursor: pointer;
+      gap: 6px !important;
+      padding-right: 150px !important;
+    }
+    .side-checkbox input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #2196f3;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    /* Recurring panel */
+    .recurring-panel {
+      background: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .recurring-panel label {
+      text-transform: none;
+      font-weight: 500;
+      color: #555;
+      letter-spacing: normal;
+      font-size: 12px;
+    }
+
+    /* Modal buttons */
+    .modal-btn {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .modal-btn-primary { background: #2196f3; color: white; }
+    .modal-btn-primary:hover { background: #1976d2; }
+    .modal-btn-secondary { background: #f0f0f0; color: #333; }
+    .modal-btn-secondary:hover { background: #e0e0e0; }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+    }
+
+    /* Edit form styling */
+    .edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .edit-form label {
+      display: flex;
+      margin-top: 10px;
+      flex-direction: column;
+      font-size: 12px;
+      font-weight: 600;
+      color: #505050;
+      text-transform: none;
+      letter-spacing: 0.3px;
+      gap: 3px;
+    }
+    .edit-form input[type="text"],
+    .edit-form input[type="number"],
+    .edit-form input[type="datetime-local"],
+    .edit-form input[type="date"],
+    .edit-form input:not([type]),
+    .edit-form textarea,
+    .edit-form select {
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fafafa;
+      color: #1a1a1a;
+      text-transform: none;
+      font-weight: 400;
+      letter-spacing: normal;
+    }
+    .edit-form input:focus,
+    .edit-form textarea:focus,
+    .edit-form select:focus {
+      outline: none;
+      border-color: #2196f3;
+      background: #fff;
+    }
+    .edit-form textarea {
+      resize: vertical;
+      min-height: 50px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div style="display:flex; flex-direction:column; height:100vh;">
+
+  <!-- Top Header Bar -->
+  <div style="display:flex; align-items:center; padding:5px 20px; border-bottom:1px solid #eee; background:#fff;">
+    <a href="/settings" style="color:#666; text-decoration:none; font-size:40px; width:140px;" title="Settings">
+      ⚙
+    </a>
+    <div style="flex:1; display:flex; justify-content:center; align-items:center; gap:16px; padding-right:80px;">
+      <div style="position:relative;">
+        <input type="text" id="task-search-input" placeholder="Search tasks..."
+               oninput="handleTaskSearch(this.value)"
+               onfocus="handleTaskSearchFocus()"
+               onkeydown="handleSearchKeydown(event)"
+               style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; width:200px; font-size:14px;">
+        <div id="task-search-results" style="display:none; position:absolute; top:100%; left:0; right:0;
+             background:#fff; border:1px solid #ddd; border-top:none; border-radius:0 0 6px 6px;
+             max-height:300px; overflow-y:auto; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        </div>
+      </div>
+      <button id="main-add-button" class="btn btn-primary" onclick="openModal()" style="padding:10px 24px;">
+        + Add Task
+      </button>
+    </div>
+    <div class="view-toggle-group" style="width:auto; justify-content:flex-end;">
+      <button id="btn-kanban" onclick="showView('kanban')">Kanban</button>
+      <button id="btn-calendar" onclick="showView('calendar')">Calendar</button>
+      <button id="btn-flowchart" onclick="showView('flowchart')">Flowchart</button>
+      <button id="btn-habits" onclick="showView('habits')">Habits</button>
+    </div>
+  </div>
+
+  <!-- Overlay for modals -->
+  <div id="overlay"
+     onclick="closeModal()"
+     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); z-index:999;">
+  </div>
+
+  <!-- Add Task Modal -->
+  <div id="modal" class="modal" style="display:none;">
+     <form method="POST" action="/create-task" class="edit-form" id="create-task-form">
+        <div class="modal-two-column">
+            <!-- Main Column (left) -->
+            <div class="modal-main-column">
+                <!-- Title -->
+                <label>
+                    Title
+                    <input name="title" required placeholder="Enter task title...">
+                </label>
+
+                <!-- Description -->
+                <label class="view-field-label">
+                    Description
+                    <textarea name="description" style="min-height:60px;" placeholder="Add a description..."></textarea>
+                </label>
+
+                <!-- Relationships -->
+                <div style="margin-top:12px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px;">
+
+                        <!-- Direct Dependencies -->
+                        <div>
+                            <div class="view-field-label" style="text-align:center; display:flex; justify-content:center; gap:8px; align-items:center;">
+                                <span>⬅️ Dependencies</span>
+                                <span class="edit-link" onclick="openCreateDependenciesPopup()">(Edit)</span>
+                            </div>
+                            <div id="create-deps-container">
+                                <div class="view-field-value">None</div>
+                            </div>
+                        </div>
+
+                        <!-- Direct Dependents -->
+                        <div>
+                            <div class="view-field-label" style="text-align:center; display:flex; justify-content:center; gap:8px; align-items:center;">
+                                <span>Dependents</span>
+                                <span class="edit-link" onclick="openCreateDependentsPopup()">(Edit) ➡️</span>
+                            </div>
+                            <div id="create-dependents-container">
+                                <div class="view-field-value">None</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Column (right) -->
+            <div class="modal-side-column">
+
+                <!-- Top row: Goal/Status on left, checkboxes on right -->
+                <div style="display:flex; gap:16px;">
+                    <!-- Left: Goal and Status -->
+                    <div style="flex:1; display:flex; flex-direction:column; gap:12px;">
+                        <!-- Goal(s) -->
+                        <div class="side-field">
+                            <div class="side-field-label">Goals</div>
+                            <div class="side-field-value" id="create-task-goals">
+                                <span style="color:#999; font-size:12px;">None</span>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="view-field">
+                            <div class="view-field-label">Status</div>
+                            <div class="view-field-value" id="create-task-status" style="background:transparent; padding:4px 0;">
+                                <span class="status-badge status-Free">Free</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Checkboxes -->
+                    <div style="display:flex; flex-direction:column; gap:8px; padding-top:4px;">
+                        <!-- Fixed time / Event -->
+                        <label class="side-checkbox-compact" id="create-fixed-time-label">
+                            <span>Event</span>
+                            <input type="checkbox" name="fixed_time" id="create-fixed-time-checkbox" onchange="updateCreateTaskStatusAndGoals()">
+                        </label>
+
+                        <!-- Recurring -->
+                        <label class="side-checkbox-compact" id="create-recurring-label">
+                            <span>Recurring</span>
+                            <input type="checkbox" name="recurring" id="create-recurring-checkbox" onchange="toggleRecurringOptions('create'); updateCreateTaskStatusAndGoals()">
+                        </label>
+
+                        <!-- Delegated -->
+                        <label class="side-checkbox-compact">
+                            <span>Delegated</span>
+                            <input type="checkbox" name="awaiting" onchange="updateCreateTaskStatusAndGoals()">
+                        </label>
+
+                        <!-- Mark as Goal -->
+                        <label class="side-checkbox-compact">
+                            <span>Goal</span>
+                            <input type="checkbox" name="unknown_dependencies" onchange="updateCreateTaskStatusAndGoals()">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Recurring Options (shows when recurring is checked) -->
+                <div id="create-recurring-options" class="recurring-panel" style="display:none;">
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <span>Every</span>
+                        <input type="number" name="recurrence_interval" value="1" min="1" style="width:40px; padding:3px 5px; font-size:12px;">
+                        <select name="recurrence_frequency" id="create-recurrence-frequency" onchange="toggleFrequencyOptions('create')" style="padding:3px 5px; font-size:12px;">
+                            <option value="daily">Day(s)</option>
+                            <option value="weekly">Week(s)</option>
+                            <option value="monthly">Month(s)</option>
+                            <option value="yearly">Year(s)</option>
+                        </select>
+                    </div>
+
+                    <!-- Weekly options -->
+                    <div id="create-weekly-options" style="display:none; gap:4px; margin-top:6px; flex-wrap:wrap;">
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_0" value="0" style="width:12px;height:12px;"> M</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_1" value="1" style="width:12px;height:12px;"> T</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_2" value="2" style="width:12px;height:12px;"> W</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_3" value="3" style="width:12px;height:12px;"> T</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_4" value="4" style="width:12px;height:12px;"> F</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_5" value="5" style="width:12px;height:12px;"> S</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_6" value="6" style="width:12px;height:12px;"> S</label>
+                    </div>
+
+                    <!-- Monthly options -->
+                    <div id="create-monthly-options" style="display:none; flex-direction:column; gap:4px; margin-top:6px;">
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                            <input type="radio" name="recurrence_month_type" value="day_of_month" checked style="width:12px;height:12px;"> Same day
+                        </label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                            <input type="radio" name="recurrence_month_type" value="day_of_week" style="width:12px;height:12px;"> Same weekday
+                        </label>
+                    </div>
+
+                    <!-- End options -->
+                    <div style="margin-top:6px; font-size:11px;">
+                        <div style="margin-bottom:4px;">Ends:</div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                                <input type="radio" name="recurrence_end_type" value="never" checked onchange="toggleEndOptions('create')" style="width:12px;height:12px;"> Never
+                            </label>
+                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                                <input type="radio" name="recurrence_end_type" value="after" onchange="toggleEndOptions('create')" style="width:12px;height:12px;"> After
+                                <input type="number" name="recurrence_end_count" id="create-end-count" value="10" min="1" style="width:35px; padding:2px 4px; font-size:11px;" disabled>
+                            </label>
+                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                                <input type="radio" name="recurrence_end_type" value="on_date" onchange="toggleEndOptions('create')" style="width:12px;height:12px;"> Until
+                            </label>
+                            <input type="date" name="recurrence_end_date" id="create-end-date" style="padding:2px 4px; font-size:11px; width:100%; box-sizing:border-box;" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule -->
+                <div class="side-field">
+                    <div class="side-field-label">Schedule</div>
+                    <input type="datetime-local"
+                        name="scheduled_datetime"
+                        id="create-scheduled-datetime"
+                        onchange="updateScheduleDependentOptions('create')">
+                </div>
+
+                <!-- Due date -->
+                <div class="side-field">
+                    <div class="side-field-label">Due</div>
+                    <input type="datetime-local" name="deadline">
+                </div>
+
+                <!-- Duration -->
+                <div class="side-field">
+                    <div class="side-field-label">Duration (hours)</div>
+                    <input type="number" name="estimated_duration" step="0.5" placeholder="0.0">
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="redirect_view" id="redirect-view-input" value="kanban">
+
+        <!-- Buttons -->
+        <div class="button-row">
+            <button type="submit" class="modal-btn modal-btn-primary">
+                Create Task
+            </button>
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()">
+                Cancel
+            </button>
+        </div>
+    </form>
+  </div>
+
+
+  <!-- Main content area (full width) -->
+  <div style="flex:1; padding:10px; display:flex; flex-direction:column; overflow:hidden;">
+
+    <!-- Calendar View -->
+    <div id="calendar-view" style="display:none; flex:1; overflow:hidden;">
+      <div id="calendar" style="height:100%;"></div>
+    </div>
+
+    <!-- Kanban View -->
+    {% macro task_labels(task) %}
+      <div class="kanban-card-labels">
+        
+        {% set upstream = task.get_upstream_count() %}
+        {% if upstream > 0 %}
+          <span class="task-label label-dependencies">⬅️ {{ upstream }}</span>
+        {% endif %}
+        {% set downstream = task.get_downstream_count() %}
+        {% if downstream > 0 %}
+          <span class="task-label label-dependents">➡️ {{ downstream }}</span>
+        {% endif %}
+
+
+        {% if task.scheduled_datetime %}
+          {% set now = namespace(dt=task.scheduled_datetime.now()) %}
+          {% set delta_days = (task.scheduled_datetime.date() - now.dt.date()).days %}
+          {% set day = task.scheduled_datetime.day %}
+          {% set suffix =
+              'th' if 11 <= day <= 13 else
+              'st' if day % 10 == 1 else
+              'nd' if day % 10 == 2 else
+              'rd' if day % 10 == 3 else
+              'th'
+          %}
+
+          <span class="task-label label-scheduled">
+            🗓️
+            {% if delta_days == 0 %}
+              Today {{ task.scheduled_datetime.strftime('%-I:%M%p') }}
+            {% elif delta_days == 1 %}
+              Tomorrow {{ task.scheduled_datetime.strftime('%-I:%M%p') }}
+            {% elif 1 < delta_days <= 6 %}
+              {{ task.scheduled_datetime.strftime('%a %-I%p') }}
+            {% else %}
+              {{ task.scheduled_datetime.strftime('%b') }} {{ day }}{{ suffix }}
+              {{ task.scheduled_datetime.strftime('%-I%p') }}
+            {% endif %}
+          </span>
+        {% endif %}
+
+
+        {% if task.deadline %}
+          {% set now = None %}
+          {% set delta = (task.deadline - task.deadline.now()).total_seconds() %}
+          {% if delta < 0 %}
+            <span class="task-label label-overdue">Overdue</span>
+          {% elif delta < 86400 %}
+            <span class="task-label label-due-soon">Due {{ (delta // 3600)|int }}h</span>
+          {% elif delta < 604800 %}
+            <span class="task-label label-deadline">Due {{ (delta // 86400)|int }}d</span>
+          {% else %}
+            <span class="task-label label-deadline">{{ task.deadline.strftime('%b %d') }}</span>
+          {% endif %}
+        {% endif %}
+        <!--commenting out duration label 
+        {% if task.estimated_duration %}
+          <span class="task-label label-duration">{{ task.estimated_duration }}h</span>
+        {% endif %}
+        -->
+
+        {% set downstream_goals = task.get_downstream_goals() %}
+        {% for goal in downstream_goals %}
+          <span class="task-label label-goal">→ {{ goal.title }}</span>
+        {% endfor %}
+      </div>
+    {% endmacro %}
+
+    <div id="kanban-view" style="display:none; flex:1; overflow-x:auto; overflow-y:hidden;">
+      <div style="display:flex; gap:12px; height:100%; min-width:max-content;">
+        <div class="kanban-column" data-status="Free">
+          <div class="kanban-column-header">
+            <h4>Actions</h4>
+            <p class="kanban-column-desc">Ready to complete</p>
+          </div>
+          <div class="kanban-column-body">
+            <ul>
+              {% for task in actions_sorted %}
+              <li draggable="true" data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
+                <div class="kanban-card-header">
+                  <span class="task-title">{{ task.title }}</span>
+                  <button class="complete-btn"
+                    onclick="event.stopPropagation();
+                    quickComplete({{ task.id }})"
+                    title="Mark complete">
+                  </button>
+                </div>
+                {{ task_labels(task) }}
+                <div class="kanban-card-footer">
+                  <button
+                    class="delete-btn"
+                    onclick="event.stopPropagation();
+                    quickDelete({{ task.id }})"
+                    title="Delete">🗑
+                  </button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        
+
+        <div class="kanban-column" data-status="Event">
+          <div class="kanban-column-header">
+            <h4>Events</h4>
+            <p class="kanban-column-desc">Fixed time task</p>
+          </div>
+          <div class="kanban-column-body">
+            <ul>
+              {% for task in tasks
+                  | selectattr("status", "equalto", "Event")
+                  | sort(attribute="scheduled_datetime")
+              %}
+              <li data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
+                <div class="kanban-card-header">
+                  <span class="task-title">{{ task.title }}</span>
+                  <button
+                    class="complete-btn"
+                    onclick="event.stopPropagation(); quickComplete({{ task.id }})"
+                    title="Mark complete"
+                  ></button>
+
+                </div>
+                {{ task_labels(task) }}
+                <div class="kanban-card-footer">
+                  <button class="delete-btn" onclick="event.stopPropagation(); quickDelete({{ task.id }})" title="Delete">🗑</button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+
+
+        <div class="kanban-column" data-status="Goal">
+          <div class="kanban-column-header">
+            <h4>Goals</h4>
+            <p class="kanban-column-desc">Unknown dependencies</p>
+          </div>
+          <div class="kanban-column-body">
+            <ul>
+              {% for task in goals_sorted %}
+              <li data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
+                <div class="kanban-card-header">
+                  <span class="task-title">{{ task.title }}</span>
+                  <button class="complete-btn" onclick="event.stopPropagation(); quickComplete({{ task.id }})" title="Mark complete"></button>
+                </div>
+                {{ task_labels(task) }}
+                <div class="kanban-card-footer">
+                  <button class="delete-btn" onclick="event.stopPropagation(); quickDelete({{ task.id }})" title="Delete">🗑</button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="kanban-column" data-status="Awaiting">
+          <div class="kanban-column-header">
+            <h4>Awaiting</h4>
+            <p class="kanban-column-desc">Someone else completes</p>
+          </div>
+          <div class="kanban-column-body">
+            <ul>
+              {% for task in awaiting_sorted %}
+              <li data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
+                <div class="kanban-card-header">
+                  <span class="task-title">{{ task.title }}</span>
+                  <button class="complete-btn" onclick="event.stopPropagation(); quickComplete({{ task.id }})" title="Mark complete"></button>
+                </div>
+                {{ task_labels(task) }}
+                <div class="kanban-card-footer">
+                  <button class="delete-btn" onclick="event.stopPropagation(); quickDelete({{ task.id }})" title="Delete">🗑</button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="kanban-column" data-status="Blocked">
+          <div class="kanban-column-header">
+            <h4>Blocked</h4>
+            <p class="kanban-column-desc">Blocked by awaiting tasks</p>
+          </div>
+          <div class="kanban-column-body">
+            <ul>
+              {% for task in blocked_sorted %}
+              <li data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
+                <div class="kanban-card-header">
+                  <span class="task-title">{{ task.title }}</span>
+                  <button class="complete-btn" onclick="event.stopPropagation(); quickComplete({{ task.id }})" title="Mark complete"></button>
+                </div>
+                {{ task_labels(task) }}
+                <div class="kanban-card-footer">
+                  <button class="delete-btn" onclick="event.stopPropagation(); quickDelete({{ task.id }})" title="Delete">🗑</button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        
+        <!-- commenting out complete column
+        <div class="kanban-column" data-status="Complete">
+          <div class="kanban-column-header">
+            <h4>Complete</h4>
+            <p class="kanban-column-desc">Finished tasks</p>
+          </div>
+          <div class="kanban-column-body">
+            <ul>
+              {% for task in tasks|selectattr('status', 'equalto', 'Complete')|sort(attribute='completed_datetime', reverse=true) %}
+              <li data-task-id="{{ task.id }}" onclick="openTask({{ task.id }})">
+                <div class="kanban-card-header">
+                  <span class="task-title">{{ task.title }}</span>
+                </div>
+                <div class="kanban-card-labels">
+                  {% if task.completed_datetime %}
+                    <span class="task-label label-completed">{{ task.completed_datetime.strftime('%b %d %H:%M') }}</span>
+                  {% endif %}
+                </div>
+                <div class="kanban-card-footer">
+                  <button class="delete-btn" onclick="event.stopPropagation(); quickDelete({{ task.id }})" title="Delete">🗑</button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        -->
+        
+      </div>
+    </div>
+
+    <!-- D3 Flowchart View -->
+    <div id="flowchart-view" style="display:none; flex:1; flex-direction:column; height:100%;">
+      <div style="position:relative; display:flex; justify-content:center; align-items:center; margin-bottom:8px;">
+        <div style="position:absolute; left:0; display:flex; align-items:center; gap:6px;">
+          <label for="edge-filter" style="font-size:13px; color:#555;">Edges:</label>
+          <select id="edge-filter" onchange="applyEdgeFilter()" style="padding:4px 8px; border-radius:4px; border:1px solid #ccc; font-size:13px;">
+            <option value="transitive">Transitive</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="graph-legend">
+          <div class="graph-legend-item">
+            <div class="graph-legend-dot" style="background:#2196f3;"></div>
+            <span>Free</span>
+          </div>
+          <div class="graph-legend-item">
+            <div class="graph-legend-dot" style="background:#c62828;"></div>
+            <span>Blocked</span>
+          </div>
+          <div class="graph-legend-item">
+            <div class="graph-legend-dot" style="background:#da8f1f;"></div>
+            <span>Event</span>
+          </div>
+          <div class="graph-legend-item">
+            <div class="graph-legend-dot" style="background:#757575;"></div>
+            <span>Awaiting</span>
+          </div>
+          <div class="graph-legend-item">
+            <div class="graph-legend-dot" style="background:#00897b;"></div>
+            <span>Recurring</span>
+          </div>
+          <div class="graph-legend-item">
+            <div class="graph-legend-dot" style="background:#9300ef;"></div>
+            <span>Goal</span>
+          </div>
+          <div id="redundant-edge-legend" class="graph-legend-item" style="display:none;">
+            <div style="width:20px; height:3px; background:#c62828; margin-right:6px;"></div>
+            <span>Redundant</span>
+          </div>
+        </div>
+        <div class="flowchart-controls" style="position:absolute; right:0; display:flex; gap:4px;">
+          <button onclick="zoomFlowchart(1.2)" title="Zoom in">+</button>
+          <button onclick="zoomFlowchart(0.8)" title="Zoom out">−</button>
+          <button onclick="fitFlowchart()" title="Fit to view">Fit</button>
+          <button onclick="resetFlowchartLayout()" title="Reset layout">Reset</button>
+        </div>
+      </div>
+      <div id="flowchart-container" style="flex:1; background:#fafafa; border-radius:8px; overflow:hidden; position:relative;">
+        <div id="flowchart-instructions" style="position:absolute; bottom:10px; left:10px; background:rgba(255,255,255,0.9); padding:8px 12px; border-radius:6px; font-size:12px; color:#666; z-index:10;">
+          <strong>Tips:</strong> Drag nodes to reposition • Drag from green dots to create edges • Click edge to edit ports/waypoints • Double-click edge to add waypoint
+        </div>
+      </div>
+    </div>
+
+    <!-- Habits View -->
+    <div id="habits-view" style="display:none; flex:1; flex-direction:column; height:100%;">
+      <div style="display:flex; justify-content:center; align-items:center; gap:8px; padding:0 0 12px 0;">
+        <label style="font-size:13px; color:#666;">From:</label>
+        <input type="date" id="habits-start-date" onchange="onHabitsDateRangeChange()" style="padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        <label style="font-size:13px; color:#666; margin-left:8px;">To:</label>
+        <input type="date" id="habits-end-date" onchange="onHabitsDateRangeChange()" style="padding:4px 8px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+      </div>
+      <div id="habits-container" style="flex:1; overflow:auto;">
+        <!-- Habits grid will be rendered here -->
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Task Modal Container -->
+<div id="task-modal" class="modal" style="display:none;">
+</div>
+
+<!-- Add Habit Modal -->
+<div id="habit-modal-overlay"
+   onclick="closeHabitModal()"
+   style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+          background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); z-index:999;">
+</div>
+<div id="habit-modal" class="modal" style="display:none; width:500px;">
+  <h2 id="habit-modal-title">Add Habit</h2>
+  <form id="habit-form" class="task-form" onsubmit="saveHabit(event)">
+    <input type="hidden" id="habit-id" value="">
+
+    <!-- Habit Name -->
+    <label>
+      Name
+      <input type="text" id="habit-name" name="name" required placeholder="e.g., Morning meditation">
+    </label>
+
+    <!-- Description -->
+    <label>
+      Description (optional)
+      <textarea id="habit-description" name="description" placeholder="Why is this habit important to you?"></textarea>
+    </label>
+
+    <!-- Category -->
+    <label>
+      Category (optional)
+      <input type="text" id="habit-category" name="category" list="habit-categories-list" placeholder="e.g., Health, Productivity, Learning">
+      <datalist id="habit-categories-list">
+        <!-- Populated by JavaScript -->
+      </datalist>
+    </label>
+
+    <!-- Schedule -->
+    <label>
+      Schedule
+      <select id="habit-schedule" name="schedule">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </label>
+
+    <!-- Days of week (shown only for weekly schedule) -->
+    <div id="habit-days-container" style="display:none;">
+      <label style="margin-bottom:8px;">Days of the week</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="0"> Mon
+        </label>
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="1"> Tue
+        </label>
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="2"> Wed
+        </label>
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="3"> Thu
+        </label>
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="4"> Fri
+        </label>
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="5"> Sat
+        </label>
+        <label class="checkbox" style="flex:none;">
+          <input type="checkbox" name="days" value="6"> Sun
+        </label>
+      </div>
+    </div>
+
+    <!-- Occurrences -->
+    <label>
+      Occurrences
+      <input type="number" id="habit-occurrences" name="occurrences" min="1" value="1" placeholder="Number of times per period">
+    </label>
+
+    <!-- Target Adherence -->
+    <label>
+      Target Adherence (%)
+      <input type="number" id="habit-target-adherence" name="target_adherence" min="0" max="100" value="100" placeholder="0-100">
+    </label>
+
+    <!-- Active -->
+    <label class="checkbox">
+      <input type="checkbox" id="habit-active" name="active" checked>
+      Active
+    </label>
+
+    <div class="actions" style="display:flex; justify-content:space-between;">
+      <button type="button" id="habit-delete-btn" class="btn btn-danger" onclick="deleteHabitFromModal()" style="display:none;">Delete</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button type="button" class="btn btn-secondary" onclick="closeHabitModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Habit</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Toast Notification for Complete -->
+<div id="toast" class="toast">
+  <a id="toast-task-link" onclick="openCompletedTask()">Task</a> completed.
+  <a class="undo-link" onclick="undoComplete()">Undo</a>
+</div>
+
+<!-- Toast Notification for Delete -->
+<div id="delete-toast" class="toast">
+  <a id="delete-toast-task-link" onclick="openDeletedTask()">Task</a> deleted.
+  <a class="undo-link" onclick="undoDelete()">Undo</a>
+</div>
+
+<!-- Dependents Popup Modal -->
+<div id="dependents-overlay"
+   onclick="closeDependentsPopup()"
+   style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+          background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); z-index:1000;">
+</div>
+<div id="dependents-modal" class="dependents-modal" style="display:none;">
+  <h3>Tasks <b>directly</b> depending on: <span id="dependents-task-title"></span></h3>
+  <input type="text" class="dependents-search" id="dependents-search" placeholder="Search tasks..." oninput="filterDependentsList()">
+  <ul class="dependents-list" id="dependents-list">
+    <!-- Populated by JavaScript -->
+  </ul>
+  <button class="dependents-close-btn" onclick="closeDependentsPopup()">Close</button>
+</div>
+
+<!-- Create Task Dependencies Popup Modal -->
+<div id="create-deps-overlay"
+   onclick="closeCreateDependenciesPopup()"
+   style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+          background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); z-index:1002;">
+</div>
+<div id="create-deps-modal" class="dependents-modal" style="display:none; z-index:1003;">
+  <h3>Select Dependencies</h3>
+  <input type="text" class="dependents-search" id="create-deps-search" placeholder="Search tasks..." oninput="filterCreateDepsList()">
+  <ul class="dependents-list" id="create-deps-list">
+    <!-- Populated by JavaScript -->
+  </ul>
+  <button class="dependents-close-btn" onclick="closeCreateDependenciesPopup()">Done</button>
+</div>
+
+<!-- Create Task Dependents Popup Modal -->
+<div id="create-dependents-overlay"
+   onclick="closeCreateDependentsPopup()"
+   style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+          background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); z-index:1002;">
+</div>
+<div id="create-dependents-modal" class="dependents-modal" style="display:none; z-index:1003;">
+  <h3>Select Dependents</h3>
+  <input type="text" class="dependents-search" id="create-dependents-search" placeholder="Search tasks..." oninput="filterCreateDependentsList()">
+  <ul class="dependents-list" id="create-dependents-list">
+    <!-- Populated by JavaScript -->
+  </ul>
+  <button class="dependents-close-btn" onclick="closeCreateDependentsPopup()">Done</button>
+</div>
+
+<!-- FullCalendar -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<!-- D3.js for flowchart -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<script>
+  // Check URL param first, then localStorage, then default to kanban
+  const urlParams = new URLSearchParams(window.location.search);
+  let currentView = urlParams.get('view') || localStorage.getItem('pmtool_view') || 'kanban';
+
+  // Flowchart variables
+  let flowchartSvg = null;
+  let flowchartData = null;
+  let flowchartZoom = null;
+  let flowchartG = null;
+  let flowchartNodes = [];
+  let flowchartEdges = [];
+
+  // Flowchart interaction state
+  let dragState = null;
+  let selectedEdge = null;
+  let edgeCreationState = null;
+  let justFinishedNodeInteraction = false;  // Flag to prevent SVG click handler race condition
+  const DRAG_THRESHOLD = 5;
+  const SNAP_THRESHOLD = 15;
+
+  let calendarInstance = null;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize FullCalendar
+    calendarInstance = new FullCalendar.Calendar(document.getElementById('calendar'), {
+      initialView: 'dayGridMonth',
+      firstDay: 1, // ← Monday
+      height: '100%',
+      editable: true,
+      stickyHeaderDates: true,
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      events: [
+        {% for event in calendar_events %}
+            {
+              id: "{{ event.id }}",
+              title: "{{ event.title }}",
+              start: "{{ event.start }}",
+              backgroundColor: "{{ event.color }}",
+              borderColor: "{{ event.color }}",
+              display: 'block'
+            },
+        {% endfor %}
+      ],
+      eventClick: function(info) {
+        // Open task modal when clicking a calendar event
+        openTask(parseInt(info.event.id));
+      },
+      eventDrop: async function(info) {
+        // Update task scheduled datetime when dragged
+        const taskId = info.event.id;
+        const newDate = info.event.start.toISOString();
+
+        try {
+          const response = await fetch(`/task/${taskId}/reschedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scheduled_datetime: newDate })
+          });
+
+          if (!response.ok) {
+            info.revert();
+            alert('Failed to reschedule task');
+          }
+        } catch (error) {
+          info.revert();
+          alert('Failed to reschedule task');
+        }
+      }
+    });
+    calendarInstance.render();
+
+    // Restore saved view on page load
+    showView(currentView);
+  });
+
+  function showView(view) {
+    // Redirect old 'graph' view to 'flowchart'
+    if (view === 'graph') view = 'flowchart';
+
+    // Hide all views
+    document.getElementById('calendar-view').style.display = 'none';
+    document.getElementById('kanban-view').style.display = 'none';
+    document.getElementById('flowchart-view').style.display = 'none';
+    document.getElementById('habits-view').style.display = 'none';
+
+    // Remove active class from all buttons
+    document.getElementById('btn-calendar').classList.remove('active');
+    document.getElementById('btn-kanban').classList.remove('active');
+    document.getElementById('btn-flowchart').classList.remove('active');
+    document.getElementById('btn-habits').classList.remove('active');
+
+    // Update main add button based on view
+    const mainAddButton = document.getElementById('main-add-button');
+    if (view === 'habits') {
+      mainAddButton.textContent = '+ Add Habit';
+      mainAddButton.onclick = openAddHabitModal;
+    } else {
+      mainAddButton.textContent = '+ Add Task';
+      mainAddButton.onclick = openModal;
+    }
+
+    // Show selected view and activate button
+    if (view === 'calendar') {
+      document.getElementById('calendar-view').style.display = 'block';
+      document.getElementById('btn-calendar').classList.add('active');
+      // Re-render calendar to fix sizing issues when container was hidden
+      if (calendarInstance) {
+        calendarInstance.updateSize();
+      }
+    } else if (view === 'kanban') {
+      document.getElementById('kanban-view').style.display = 'block';
+      document.getElementById('btn-kanban').classList.add('active');
+    } else if (view === 'flowchart') {
+      document.getElementById('flowchart-view').style.display = 'flex';
+      document.getElementById('btn-flowchart').classList.add('active');
+      loadFlowchart();
+    } else if (view === 'habits') {
+      document.getElementById('habits-view').style.display = 'flex';
+      document.getElementById('btn-habits').classList.add('active');
+      loadHabits();
+    }
+
+    currentView = view;
+    localStorage.setItem('pmtool_view', view);
+  }
+
+
+  function pastelize(hex, mix = 0.15) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+
+    const mixWith = 255; // white
+    const pr = Math.round(r * mix + mixWith * (1 - mix));
+    const pg = Math.round(g * mix + mixWith * (1 - mix));
+    const pb = Math.round(b * mix + mixWith * (1 - mix));
+
+    return `rgb(${pr}, ${pg}, ${pb})`;
+  }
+
+
+
+  // ========== D3 Flowchart Functions ==========
+
+  const STATUS_COLORS = {
+    'Free': '#2196f3',
+    'Blocked': '#c62828',
+    'Awaiting': '#757575',
+    'Event': '#da8f1f',
+    'Goal': '#9300ef',
+    'Recurring': '#00897b',
+    'Complete': '#4caf50'
+  };
+
+  async function refreshFlowchart() {
+    // Reload flowchart data and re-render
+    if (!flowchartSvg) return;
+
+    try {
+      const response = await fetch('/api/graph-data');
+      flowchartData = await response.json();
+
+      // Rebuild node map
+      const nodeMap = {};
+      flowchartNodes = flowchartData.nodes.map(n => {
+        const node = {
+          id: n.id,
+          title: n.title,
+          status: n.status,
+          width: 160,
+          height: 50,
+          x: 0,
+          y: 0,
+          hasCustomPosition: false
+        };
+        nodeMap[n.id] = node;
+        return node;
+      });
+
+      // Apply custom positions
+      if (flowchartData.nodePositions) {
+        flowchartData.nodePositions.forEach(pos => {
+          const node = nodeMap[pos.task_id];
+          if (node) {
+            node.x = pos.x;
+            node.y = pos.y;
+            node.hasCustomPosition = true;
+          }
+        });
+      }
+
+      // Rebuild edges
+      flowchartEdges = flowchartData.edges.map(e => ({
+        ...e,
+        source: nodeMap[e.from],
+        target: nodeMap[e.to],
+        redundant: e.redundant || false,
+        sourcePort: e.sourcePort || null,
+        targetPort: e.targetPort || null,
+        waypoints: e.waypoints || []
+      })).filter(e => e.source && e.target);
+
+      // Recalculate layout
+      calculateFlowchartLayout();
+
+      // Clean up waypoints
+      flowchartEdges.forEach(edge => {
+        cleanupWaypoints(edge);
+      });
+
+      // Clear and redraw
+      flowchartG.selectAll('g.edges').remove();
+      flowchartG.selectAll('g.nodes').remove();
+      flowchartG.selectAll('.alignment-guide').remove();
+
+      const edgesGroup = flowchartG.append('g').attr('class', 'edges');
+      renderFlowchartEdges(edgesGroup);
+
+      const nodesGroup = flowchartG.append('g').attr('class', 'nodes');
+      renderFlowchartNodes(nodesGroup);
+
+      // Reset selection state
+      selectedEdge = null;
+      highlightedNodeId = null;
+
+    } catch (error) {
+      console.error('Error refreshing flowchart:', error);
+    }
+  }
+
+  async function loadFlowchart() {
+    if (flowchartSvg) return; // Already loaded
+
+    try {
+      const response = await fetch('/api/graph-data');
+      flowchartData = await response.json();
+
+      if (flowchartData.nodes.length === 0) {
+        document.getElementById('flowchart-container').innerHTML =
+          '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#666;">No tasks to display. Create some tasks with dependencies to see the flowchart.</div>';
+        return;
+      }
+
+      initFlowchart();
+    } catch (error) {
+      console.error('Error loading flowchart:', error);
+      document.getElementById('flowchart-container').innerHTML =
+        '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#c00;">Error loading flowchart. Check console for details.</div>';
+    }
+  }
+
+  // --- Habits View ---
+  let habitsLoaded = false;
+  let habitsData = [];
+  let habitsCompletions = {};  // {habit_id: ['2024-01-01', '2024-01-02', ...]}
+  let habitsStartDate = null;
+  let habitsEndDate = null;
+
+  async function loadHabits() {
+    try {
+      // Load habits
+      const habitsResponse = await fetch('/api/habits');
+      habitsData = await habitsResponse.json();
+
+      if (habitsData.length === 0) {
+        renderHabits();
+        habitsLoaded = true;
+        return;
+      }
+
+      // Default start date is 2 weeks before today
+      if (!habitsStartDate) {
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+        habitsStartDate = twoWeeksAgo.toISOString().split('T')[0];
+      }
+
+      // End date is today + 10 days
+      if (!habitsEndDate) {
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 10);
+        habitsEndDate = endDate.toISOString().split('T')[0];
+      }
+
+      // Update date inputs
+      document.getElementById('habits-start-date').value = habitsStartDate;
+      document.getElementById('habits-end-date').value = habitsEndDate;
+
+      // Load completions for date range
+      await loadHabitsCompletions();
+
+      renderHabits();
+      habitsLoaded = true;
+    } catch (error) {
+      console.error('Error loading habits:', error);
+      document.getElementById('habits-container').innerHTML =
+        '<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#c00;">Error loading habits. Check console for details.</div>';
+    }
+  }
+
+  async function loadHabitsCompletions() {
+    const response = await fetch(`/api/habits/completions?start=${habitsStartDate}&end=${habitsEndDate}`);
+    const data = await response.json();
+    habitsCompletions = data.completions || {};
+  }
+
+  function onHabitsDateRangeChange() {
+    habitsStartDate = document.getElementById('habits-start-date').value;
+    habitsEndDate = document.getElementById('habits-end-date').value;
+
+    if (habitsStartDate && habitsEndDate) {
+      habitsLoaded = false;
+      loadHabitsCompletions().then(() => renderHabits());
+    }
+  }
+
+  function getDatesBetween(startDate, endDate) {
+    const dates = [];
+    const current = new Date(startDate);
+    const end = new Date(endDate);
+
+    while (current <= end) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  function formatDateHeader(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    const day = date.getDate();
+    const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+    return { day, weekday };
+  }
+
+  function calculateExpectedCompletions(habit, dates, completedDates) {
+    const occurrences = habit.occurrences || 1;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Find the first completion date for this habit
+    const sortedCompletions = [...completedDates].sort();
+    const firstCompletion = sortedCompletions.length > 0 ? sortedCompletions[0] : null;
+
+    // Get the start of the visible date range
+    const rangeStart = dates.length > 0 ? dates[0] : null;
+
+    // Filter dates: only include dates up to today (not future)
+    // If first completion is before range start, include all dates in range
+    // Otherwise, only include dates from first completion onwards
+    const relevantDates = dates.filter(d => {
+      if (d > today) return false;  // Exclude future dates
+      // If there's a completion before the visible range, include all dates in range
+      if (firstCompletion && firstCompletion < rangeStart) return true;
+      // Otherwise, exclude dates before first completion
+      if (firstCompletion && d < firstCompletion) return false;
+      return true;
+    });
+
+    if (relevantDates.length === 0) return 0;
+
+    if (habit.schedule === 'daily') {
+      // Expected = number of days * occurrences per day
+      return relevantDates.length * occurrences;
+    } else if (habit.schedule === 'weekly') {
+      // Count number of weeks in the date range
+      const weeks = Math.ceil(relevantDates.length / 7);
+      return weeks * occurrences;
+    } else if (habit.schedule === 'monthly') {
+      // Count number of months in the date range
+      const startDate = new Date(relevantDates[0]);
+      const endDate = new Date(relevantDates[relevantDates.length - 1]);
+      const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth()) + 1;
+      return months * occurrences;
+    }
+    return relevantDates.length;
+  }
+
+  function renderHabits() {
+    const container = document.getElementById('habits-container');
+
+    if (!habitsData || habitsData.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center; padding:60px; color:#666;">
+          <p style="font-size:16px; margin-bottom:16px;">No habits yet</p>
+          <p style="font-size:14px;">Click "+ Add Habit" to create your first habit.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const dates = getDatesBetween(habitsStartDate, habitsEndDate);
+    const today = new Date().toISOString().split('T')[0];
+
+    // Build the grid HTML
+    let html = `
+      <div class="habits-grid-wrapper" style="overflow-x:auto;">
+        <table class="habits-grid" style="border-collapse:collapse; min-width:100%; table-layout:fixed; width:max-content;">
+          <colgroup>
+            <col style="width:160px;">
+            <col style="width:110px;">
+            <col style="width:90px;">
+            <col style="width:70px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th style="position:sticky; left:0; background:#fff; z-index:2; padding:8px 12px; text-align:left; border-bottom:2px solid #e0e0e0; white-space:nowrap; width:160px;">
+                Habit
+              </th>
+              <th style="position:sticky; left:160px; background:#fff; z-index:2; padding:8px 12px; text-align:left; border-bottom:2px solid #e0e0e0; color:#666; font-weight:500; white-space:nowrap; width:110px;">
+                Category
+              </th>
+              <th style="position:sticky; left:270px; background:#fff; z-index:2; padding:8px 12px; text-align:left; border-bottom:2px solid #e0e0e0; color:#666; font-weight:500; white-space:nowrap; width:90px;">
+                Schedule
+              </th>
+              <th style="position:sticky; left:360px; background:#fff; z-index:2; padding:8px 12px; text-align:left; border-bottom:2px solid #e0e0e0; color:#666; font-weight:500; white-space:nowrap; width:70px; box-shadow:2px 0 4px rgba(0,0,0,0.08);">
+                Actual
+              </th>
+    `;
+
+    // Date headers
+    dates.forEach(dateStr => {
+      const { day, weekday } = formatDateHeader(dateStr);
+      const isToday = dateStr === today;
+      const isWeekend = weekday === 'Sat' || weekday === 'Sun';
+      html += `
+        <th style="min-width:40px; padding:4px; text-align:center; border-bottom:2px solid #e0e0e0; ${isToday ? 'background:#e3f2fd;' : ''}">
+          <div style="font-size:10px; color:#888; font-weight:normal;">${weekday}</div>
+          <div style="font-size:13px; font-weight:600; ${isToday ? 'color:#1976d2;' : 'color:#333;'}">${day}</div>
+        </th>
+      `;
+    });
+
+    html += `
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    // Habit rows - sort by active, category, name
+    const sortedHabits = [...habitsData].sort((a, b) => {
+      // 1. Active habits first
+      if (a.active && !b.active) return -1;
+      if (!a.active && b.active) return 1;
+      // 2. Category (alphabetically, empty last)
+      const catA = (a.category || '').toLowerCase();
+      const catB = (b.category || '').toLowerCase();
+      if (catA && !catB) return -1;
+      if (!catA && catB) return 1;
+      if (catA < catB) return -1;
+      if (catA > catB) return 1;
+      // 3. Name (alphabetically)
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return 0;
+    });
+
+    sortedHabits.forEach(habit => {
+      const completedDates = habitsCompletions[habit.id] || [];
+      const isInactive = !habit.active;
+
+      // Format schedule text: "4x weekly", "1x daily", "2x monthly"
+      const scheduleLabels = { daily: 'daily', weekly: 'weekly', monthly: 'monthly' };
+      const scheduleLabel = scheduleLabels[habit.schedule] || habit.schedule;
+      const scheduleText = `${habit.occurrences}x ${scheduleLabel}`;
+
+      // Calculate actual adherence
+      const actualCompletions = completedDates.length;
+      const expectedCompletions = calculateExpectedCompletions(habit, dates, completedDates);
+      const actualAdherence = expectedCompletions > 0 ? Math.round((actualCompletions / expectedCompletions) * 100) : 0;
+      const meetsTarget = actualAdherence >= habit.target_adherence;
+
+      html += `
+        <tr style="${isInactive ? 'opacity:0.5;' : ''}">
+          <td style="position:sticky; left:0; background:#fff; z-index:1; padding:8px 12px; border-bottom:1px solid #eee; white-space:nowrap; width:160px; overflow:hidden; text-overflow:ellipsis;">
+            <div onclick="editHabit(${habit.id})" style="font-weight:500; font-size:14px; color:#333; cursor:pointer;" title="Click to edit">${escapeHtml(habit.name)}</div>
+          </td>
+          <td style="position:sticky; left:160px; background:#fff; z-index:1; padding:8px 12px; border-bottom:1px solid #eee; font-size:13px; color:#888; white-space:nowrap; width:110px; overflow:hidden; text-overflow:ellipsis;">
+            ${habit.category ? escapeHtml(habit.category) : '—'}
+          </td>
+          <td style="position:sticky; left:270px; background:#fff; z-index:1; padding:8px 12px; border-bottom:1px solid #eee; font-size:13px; color:#666; white-space:nowrap; width:90px;">
+            ${scheduleText}
+          </td>
+          <td style="position:sticky; left:360px; background:#fff; z-index:1; padding:8px 12px; border-bottom:1px solid #eee; font-size:13px; white-space:nowrap; width:70px; color:${meetsTarget ? '#4caf50' : '#c00'}; box-shadow:2px 0 4px rgba(0,0,0,0.08);">
+            ${actualAdherence}%
+          </td>
+      `;
+
+      // Date cells with checkmarks
+      dates.forEach(dateStr => {
+        const isCompleted = completedDates.includes(dateStr);
+        const isToday = dateStr === today;
+        const { weekday } = formatDateHeader(dateStr);
+        const isWeekend = weekday === 'Sat' || weekday === 'Sun';
+
+        html += `
+          <td style="padding:4px; text-align:center; border-bottom:1px solid #eee; ${isToday ? 'background:#e3f2fd;' : ''}">
+            <button
+              onclick="toggleHabitCompletion(${habit.id}, '${dateStr}')"
+              class="habit-check ${isCompleted ? 'completed' : ''}"
+              style="
+                width:24px;
+                height:24px;
+                border-radius:50%;
+                border:2px solid ${isCompleted ? '#4caf50' : '#ccc'};
+                background:${isCompleted ? '#4caf50' : 'transparent'};
+                cursor:pointer;
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                transition:all 0.15s;
+                padding:0;
+              "
+              title="${dateStr}"
+            >
+              ${isCompleted ? '<span style="color:#fff; font-size:14px;">✓</span>' : ''}
+            </button>
+          </td>
+        `;
+      });
+
+      html += '</tr>';
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  }
+
+  async function toggleHabitCompletion(habitId, dateStr) {
+    try {
+      const response = await fetch(`/api/habits/${habitId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Update local state
+        if (!habitsCompletions[habitId]) {
+          habitsCompletions[habitId] = [];
+        }
+
+        if (result.completed) {
+          habitsCompletions[habitId].push(dateStr);
+        } else {
+          habitsCompletions[habitId] = habitsCompletions[habitId].filter(d => d !== dateStr);
+        }
+
+        // Re-render
+        renderHabits();
+      } else {
+        const error = await response.json();
+        alert('Error toggling habit: ' + (error.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error toggling habit completion:', error);
+      alert('Error toggling habit. Please try again.');
+    }
+  }
+
+  function editHabit(habitId) {
+    const habit = habitsData.find(h => h.id === habitId);
+    if (!habit) return;
+
+    document.getElementById('habit-modal-title').textContent = 'Edit Habit';
+    document.getElementById('habit-id').value = habit.id;
+    document.getElementById('habit-name').value = habit.name || '';
+    document.getElementById('habit-description').value = habit.description || '';
+    document.getElementById('habit-category').value = habit.category || '';
+    document.getElementById('habit-schedule').value = habit.schedule || 'daily';
+    document.getElementById('habit-occurrences').value = habit.occurrences || 1;
+    document.getElementById('habit-target-adherence').value = habit.target_adherence || 100;
+    document.getElementById('habit-active').checked = habit.active !== false;
+
+    // Load category suggestions
+    loadHabitCategories();
+
+    // Show/hide days container based on schedule
+    const daysContainer = document.getElementById('habit-days-container');
+    daysContainer.style.display = habit.schedule === 'weekly' ? 'block' : 'none';
+
+    // Set days checkboxes for weekly habits
+    document.querySelectorAll('input[name="days"]').forEach(cb => {
+      cb.checked = false;
+    });
+    if (habit.schedule === 'weekly' && habit.days) {
+      const dayNums = Array.isArray(habit.days) ? habit.days : habit.days.split(',').map(d => parseInt(d.trim()));
+      dayNums.forEach(day => {
+        const cb = document.querySelector(`input[name="days"][value="${day}"]`);
+        if (cb) cb.checked = true;
+      });
+    }
+
+    // Show delete button for editing
+    document.getElementById('habit-delete-btn').style.display = 'block';
+
+    // Show modal
+    document.getElementById('habit-modal-overlay').style.display = 'block';
+    document.getElementById('habit-modal').style.display = 'block';
+  }
+
+  async function deleteHabitFromModal() {
+    const habitId = document.getElementById('habit-id').value;
+    if (!habitId) return;
+
+    if (!confirm('Are you sure you want to delete this habit? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/habits/${habitId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        closeHabitModal();
+        habitsLoaded = false;
+        loadHabits();
+      } else {
+        const error = await response.json();
+        alert('Error deleting habit: ' + (error.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting habit:', error);
+      alert('Error deleting habit. Please try again.');
+    }
+  }
+
+  async function deleteHabit(habitId) {
+    if (!confirm('Are you sure you want to delete this habit? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/habits/${habitId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        habitsLoaded = false;
+        loadHabits();
+      } else {
+        const error = await response.json();
+        alert('Error deleting habit: ' + (error.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting habit:', error);
+      alert('Error deleting habit. Please try again.');
+    }
+  }
+
+  // --- Habit Modal Functions ---
+
+  function openAddHabitModal() {
+    document.getElementById('habit-modal-title').textContent = 'Add Habit';
+    document.getElementById('habit-id').value = '';
+    document.getElementById('habit-form').reset();
+
+    // Set default values
+    document.getElementById('habit-occurrences').value = '1';
+    document.getElementById('habit-target-adherence').value = '100';
+    document.getElementById('habit-active').checked = true;
+
+    // Hide days container (default is daily)
+    document.getElementById('habit-days-container').style.display = 'none';
+
+    // Hide delete button for new habits
+    document.getElementById('habit-delete-btn').style.display = 'none';
+
+    // Load category suggestions
+    loadHabitCategories();
+
+    // Show modal
+    document.getElementById('habit-modal-overlay').style.display = 'block';
+    document.getElementById('habit-modal').style.display = 'block';
+
+    // Focus on name input
+    setTimeout(() => document.getElementById('habit-name').focus(), 100);
+  }
+
+  async function loadHabitCategories() {
+    try {
+      const response = await fetch('/api/habits/categories');
+      const categories = await response.json();
+      const datalist = document.getElementById('habit-categories-list');
+      datalist.innerHTML = categories.map(c => `<option value="${escapeHtml(c)}">`).join('');
+    } catch (error) {
+      console.error('Error loading habit categories:', error);
+    }
+  }
+
+  function closeHabitModal() {
+    document.getElementById('habit-modal-overlay').style.display = 'none';
+    document.getElementById('habit-modal').style.display = 'none';
+  }
+
+  // Toggle days of week based on frequency selection
+  document.addEventListener('DOMContentLoaded', function() {
+    const scheduleSelect = document.getElementById('habit-schedule');
+    if (scheduleSelect) {
+      scheduleSelect.addEventListener('change', function() {
+        const daysContainer = document.getElementById('habit-days-container');
+        daysContainer.style.display = this.value === 'weekly' ? 'block' : 'none';
+      });
+    }
+  });
+
+  async function saveHabit(event) {
+    event.preventDefault();
+
+    const habitId = document.getElementById('habit-id').value;
+    const name = document.getElementById('habit-name').value.trim();
+    const description = document.getElementById('habit-description').value.trim();
+    const category = document.getElementById('habit-category').value.trim();
+    const schedule = document.getElementById('habit-schedule').value;
+    const occurrences = parseInt(document.getElementById('habit-occurrences').value) || 1;
+    const targetAdherence = parseInt(document.getElementById('habit-target-adherence').value) || 100;
+    const active = document.getElementById('habit-active').checked;
+
+    // Get selected days for weekly habits
+    let days = [];
+    if (schedule === 'weekly') {
+      document.querySelectorAll('input[name="days"]:checked').forEach(cb => {
+        days.push(parseInt(cb.value));
+      });
+    }
+
+    const habitData = {
+      name,
+      description,
+      category,
+      schedule,
+      occurrences,
+      target_adherence: targetAdherence,
+      active,
+      days: schedule === 'weekly' ? days : []
+    };
+
+    try {
+      const url = habitId ? `/api/habits/${habitId}` : '/api/habits';
+      const method = habitId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(habitData)
+      });
+
+      if (response.ok) {
+        closeHabitModal();
+        // Reload habits
+        habitsLoaded = false;
+        loadHabits();
+      } else {
+        const error = await response.json();
+        alert('Error saving habit: ' + (error.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error saving habit:', error);
+      alert('Error saving habit. Please try again.');
+    }
+  }
+
+  function initFlowchart() {
+    const container = document.getElementById('flowchart-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    // Clear any existing content (except instructions)
+    d3.select('#flowchart-container svg').remove();
+
+    // Create SVG
+    flowchartSvg = d3.select('#flowchart-container')
+      .append('svg')
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .style('cursor', 'grab')
+      .on('click', (event) => {
+        // Ignore if we just finished a node interaction (race condition prevention)
+        if (justFinishedNodeInteraction) {
+          justFinishedNodeInteraction = false;
+          return;
+        }
+        // Ignore if click was on an interactive element
+        const target = event.target;
+        if (target.classList && (
+          target.classList.contains('edge-hitarea') ||
+          target.classList.contains('port-handle') ||
+          target.classList.contains('waypoint-handle') ||
+          target.classList.contains('node-connector') ||
+          target.closest('.node')
+        )) {
+          return;
+        }
+        // Deselect edge and node when clicking empty space
+        deselectEdge();
+        highlightedNodeId = null;
+        // Reset edge styles
+        flowchartG.selectAll('path.edge')
+          .attr('stroke', d => d.redundant ? '#c62828' : '#555')
+          .attr('stroke-width', 3);
+        // Reset node styles
+        flowchartG.selectAll('g.node rect')
+          .attr('stroke', d => {
+            const color = STATUS_COLORS[d.status] || '#999';
+            return d3.color(color).darker(0.3).toString();
+          })
+          .attr('stroke-width', 2);
+      });
+
+    // Add zoom behavior with filter to allow edge and port clicks
+    flowchartZoom = d3.zoom()
+      .scaleExtent([0.1, 4])
+      .filter((event) => {
+        // Allow zoom for scroll wheel
+        if (event.type === 'wheel') return true;
+        // Block zoom for clicks on edge hitareas, port handles, waypoint handles
+        const target = event.target;
+        if (target.classList && (
+          target.classList.contains('edge-hitarea') ||
+          target.classList.contains('port-handle') ||
+          target.classList.contains('waypoint-handle') ||
+          target.classList.contains('node-connector')
+        )) {
+          return false;
+        }
+        // Allow zoom for other interactions (panning on empty space)
+        return !event.ctrlKey && !event.button;
+      })
+      .on('zoom', (event) => {
+        flowchartG.attr('transform', event.transform);
+      });
+
+    flowchartSvg.call(flowchartZoom);
+
+    // Create main group for zoom/pan
+    flowchartG = flowchartSvg.append('g');
+
+    // Add arrow marker definitions - smaller arrows
+    const defs = flowchartSvg.append('defs');
+    defs.append('marker')
+      .attr('id', 'arrowhead')
+      .attr('viewBox', '0 -4 8 8')
+      .attr('refX', 7)
+      .attr('refY', 0)
+      .attr('orient', 'auto')
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .append('path')
+      .attr('d', 'M 0,-3 L 7,0 L 0,3 Z')
+      .attr('fill', '#555');
+
+    // Red arrowhead for redundant edges
+    defs.append('marker')
+      .attr('id', 'arrowhead-red')
+      .attr('viewBox', '0 -4 8 8')
+      .attr('refX', 7)
+      .attr('refY', 0)
+      .attr('orient', 'auto')
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .append('path')
+      .attr('d', 'M 0,-3 L 7,0 L 0,3 Z')
+      .attr('fill', '#c62828');
+
+    // Calculate initial layout (hierarchical)
+    calculateFlowchartLayout();
+
+    // Clean up any redundant waypoints in all edges and save
+    flowchartEdges.forEach(edge => {
+      const originalLength = edge.waypoints ? edge.waypoints.length : 0;
+      cleanupWaypoints(edge);
+      const newLength = edge.waypoints ? edge.waypoints.length : 0;
+      // Save if waypoints were cleaned up
+      if (originalLength !== newLength) {
+        saveEdgeCustomization(edge);
+      }
+    });
+
+    // Draw edges
+    const edgesGroup = flowchartG.append('g').attr('class', 'edges');
+    renderFlowchartEdges(edgesGroup);
+
+    // Draw nodes
+    const nodesGroup = flowchartG.append('g').attr('class', 'nodes');
+    renderFlowchartNodes(nodesGroup);
+
+    // Set default zoom to readable scale (1.0) centered on the graph
+    setTimeout(() => {
+      if (!flowchartNodes.length) return;
+
+      const container = document.getElementById('flowchart-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Calculate center of the graph
+      let sumX = 0, sumY = 0;
+      flowchartNodes.forEach(n => {
+        sumX += n.x;
+        sumY += n.y;
+      });
+      const centerX = sumX / flowchartNodes.length;
+      const centerY = sumY / flowchartNodes.length;
+
+      // Set scale to 1.0 for readable text, centered on graph
+      const scale = 0.5;
+      const x = width / 2 - centerX * scale;
+      const y = height / 2 - centerY * scale;
+
+      flowchartSvg.call(flowchartZoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+    }, 100);
+  }
+
+  function calculateFlowchartLayout() {
+    const nodeWidth = 220;
+    const nodeHeight = 70; // Taller for text wrapping
+    const levelSpacing = 200; // More space for edge routing
+    const nodeSpacing = 100;
+    const treeSpacing = 250; // Extra space between separate trees
+
+    // Build adjacency for topological levels
+    const nodeMap = {};
+    flowchartData.nodes.forEach(n => {
+      nodeMap[n.id] = { ...n, level: 0, children: [], parents: [], treeId: null };
+    });
+
+    flowchartData.edges.forEach(e => {
+      if (nodeMap[e.from] && nodeMap[e.to]) {
+        nodeMap[e.from].children.push(e.to);
+        nodeMap[e.to].parents.push(e.from);
+      }
+    });
+
+    const nodes = Object.values(nodeMap);
+
+    // Find separate trees using connected components
+    let treeId = 0;
+    const visited = new Set();
+
+    function markTree(node, id) {
+      if (visited.has(node.id)) return;
+      visited.add(node.id);
+      node.treeId = id;
+      // Traverse both directions to find all connected nodes
+      node.children.forEach(childId => {
+        if (nodeMap[childId]) markTree(nodeMap[childId], id);
+      });
+      node.parents.forEach(parentId => {
+        if (nodeMap[parentId]) markTree(nodeMap[parentId], id);
+      });
+    }
+
+    nodes.forEach(node => {
+      if (!visited.has(node.id)) {
+        markTree(node, treeId);
+        treeId++;
+      }
+    });
+
+    // Group nodes by tree
+    const trees = {};
+    nodes.forEach(n => {
+      if (!trees[n.treeId]) trees[n.treeId] = [];
+      trees[n.treeId].push(n);
+    });
+
+    // Calculate levels within each tree
+    function calculateLevelsForTree(treeNodes) {
+      const treeNodeMap = {};
+      treeNodes.forEach(n => {
+        n.level = 0;
+        treeNodeMap[n.id] = n;
+      });
+
+      // Find leaf nodes (nodes with no children in the tree, or Goal nodes)
+      const leaves = treeNodes.filter(n => {
+        const childrenInTree = n.children.filter(cid => treeNodeMap[cid]);
+        return childrenInTree.length === 0 || n.status === 'Goal';
+      });
+
+      // BFS from leaves going up (to parents)
+      function setLevelUp(node, level) {
+        if (level > node.level) {
+          node.level = level;
+        }
+        node.parents.forEach(parentId => {
+          if (treeNodeMap[parentId]) {
+            setLevelUp(treeNodeMap[parentId], level + 1);
+          }
+        });
+      }
+
+      leaves.forEach(leaf => setLevelUp(leaf, 0));
+    }
+
+    Object.values(trees).forEach(treeNodes => {
+      calculateLevelsForTree(treeNodes);
+    });
+
+    // Calculate bounds for each tree and position them
+    const treeBounds = {};
+    let currentTreeX = 0;
+
+    // Sort trees by size (largest first)
+    const sortedTreeIds = Object.keys(trees).sort((a, b) => trees[b].length - trees[a].length);
+
+    sortedTreeIds.forEach(tid => {
+      const treeNodes = trees[tid];
+
+      // Group by level within this tree
+      const levels = {};
+      let maxLevel = 0;
+      treeNodes.forEach(n => {
+        if (!levels[n.level]) levels[n.level] = [];
+        levels[n.level].push(n);
+        maxLevel = Math.max(maxLevel, n.level);
+      });
+
+      // Calculate tree width needed
+      let treeWidth = 0;
+      Object.values(levels).forEach(levelNodes => {
+        const levelWidth = levelNodes.length * (nodeWidth + nodeSpacing);
+        treeWidth = Math.max(treeWidth, levelWidth);
+      });
+
+      // Initial positioning: simple left-to-right at each level
+      Object.keys(levels).forEach(level => {
+        const levelNodes = levels[level];
+        const levelWidth = levelNodes.length * nodeWidth + (levelNodes.length - 1) * nodeSpacing;
+        const startX = currentTreeX + (treeWidth - levelWidth) / 2;
+
+        levelNodes.forEach((node, i) => {
+          node.x = startX + i * (nodeWidth + nodeSpacing) + nodeWidth / 2;
+          node.y = parseInt(level) * levelSpacing;
+          node.width = nodeWidth;
+          node.height = nodeHeight;
+        });
+      });
+
+      // Multiple passes to improve layout
+      for (let pass = 0; pass < 3; pass++) {
+        // Pass 1: Center parents over their children (bottom-up)
+        for (let level = 1; level <= maxLevel; level++) {
+          const levelNodes = levels[level] || [];
+          levelNodes.forEach(node => {
+            const childrenInTree = node.children
+              .map(cid => nodeMap[cid])
+              .filter(c => c && c.treeId == tid);
+            if (childrenInTree.length > 0) {
+              const avgChildX = childrenInTree.reduce((sum, c) => sum + c.x, 0) / childrenInTree.length;
+              node.x = avgChildX;
+            }
+          });
+          // Fix overlaps at this level
+          resolveOverlaps(levelNodes, nodeWidth, nodeSpacing);
+        }
+
+        // Pass 2: Center children under their parents (top-down)
+        for (let level = maxLevel - 1; level >= 0; level--) {
+          const levelNodes = levels[level] || [];
+          levelNodes.forEach(node => {
+            const parentsInTree = node.parents
+              .map(pid => nodeMap[pid])
+              .filter(p => p && p.treeId == tid);
+            if (parentsInTree.length > 0 && node.children.filter(cid => nodeMap[cid] && nodeMap[cid].treeId == tid).length === 0) {
+              // Only adjust leaf-ish nodes
+              const avgParentX = parentsInTree.reduce((sum, p) => sum + p.x, 0) / parentsInTree.length;
+              node.x = avgParentX;
+            }
+          });
+          // Fix overlaps at this level
+          resolveOverlaps(levelNodes, nodeWidth, nodeSpacing);
+        }
+      }
+
+      // Final overlap resolution for all levels
+      Object.keys(levels).forEach(level => {
+        resolveOverlaps(levels[level], nodeWidth, nodeSpacing);
+      });
+
+      // Calculate actual tree bounds after positioning
+      let minX = Infinity, maxX = -Infinity;
+      treeNodes.forEach(n => {
+        minX = Math.min(minX, n.x - nodeWidth / 2);
+        maxX = Math.max(maxX, n.x + nodeWidth / 2);
+      });
+
+      treeBounds[tid] = { minX, maxX, width: maxX - minX };
+
+      // Shift tree to start at currentTreeX
+      const shiftX = currentTreeX - minX;
+      treeNodes.forEach(n => n.x += shiftX);
+
+      currentTreeX += (maxX - minX) + treeSpacing;
+    });
+
+    // Helper function to resolve overlaps at a level
+    function resolveOverlaps(levelNodes, nodeW, nodeS) {
+      if (levelNodes.length <= 1) return;
+
+      levelNodes.sort((a, b) => a.x - b.x);
+      const minDist = nodeW + nodeS;
+
+      // Calculate original center
+      const originalCenter = levelNodes.reduce((sum, n) => sum + n.x, 0) / levelNodes.length;
+
+      // Push nodes right to resolve overlaps
+      for (let i = 1; i < levelNodes.length; i++) {
+        const prev = levelNodes[i - 1];
+        const curr = levelNodes[i];
+        if (curr.x - prev.x < minDist) {
+          curr.x = prev.x + minDist;
+        }
+      }
+
+      // Recenter around original center point
+      const newCenter = levelNodes.reduce((sum, n) => sum + n.x, 0) / levelNodes.length;
+      const shiftBack = originalCenter - newCenter;
+      levelNodes.forEach(n => n.x += shiftBack);
+    }
+
+    // Additional helper: resolve overlaps between different trees at the same Y level
+    function resolveTreeOverlaps(allNodes, nodeW, nodeS) {
+      // Group all nodes by their Y level
+      const levelMap = {};
+      allNodes.forEach(n => {
+        const yKey = Math.round(n.y);
+        if (!levelMap[yKey]) levelMap[yKey] = [];
+        levelMap[yKey].push(n);
+      });
+
+      // For each level, ensure no overlaps regardless of tree
+      Object.values(levelMap).forEach(levelNodes => {
+        if (levelNodes.length <= 1) return;
+
+        levelNodes.sort((a, b) => a.x - b.x);
+        const minDist = nodeW + nodeS;
+
+        for (let i = 1; i < levelNodes.length; i++) {
+          const prev = levelNodes[i - 1];
+          const curr = levelNodes[i];
+
+          // Only push if different trees are overlapping
+          if (prev.treeId !== curr.treeId && curr.x - prev.x < minDist) {
+            // Push the entire tree of the current node
+            const shiftAmount = minDist - (curr.x - prev.x);
+            allNodes.filter(n => n.treeId === curr.treeId).forEach(n => n.x += shiftAmount);
+          }
+        }
+      });
+    }
+
+    // Final pass: resolve any remaining overlaps between trees
+    resolveTreeOverlaps(nodes, nodeWidth, nodeSpacing);
+
+    // Center the entire graph
+    if (nodes.length > 0) {
+      const allX = nodes.map(n => n.x);
+      const minX = Math.min(...allX);
+      const maxX = Math.max(...allX);
+      const offsetX = (minX + maxX) / 2;
+      nodes.forEach(n => n.x -= offsetX);
+    }
+
+    flowchartNodes = nodes;
+
+    // Apply custom positions from server (overrides auto-layout)
+    flowchartData.nodes.forEach(n => {
+      const node = nodeMap[n.id];
+      if (node && n.customX !== undefined && n.customY !== undefined) {
+        node.x = n.customX;
+        node.y = n.customY;
+        node.hasCustomPosition = true;
+      }
+    });
+
+    flowchartEdges = flowchartData.edges.map(e => ({
+      ...e,
+      source: nodeMap[e.from],
+      target: nodeMap[e.to],
+      redundant: e.redundant || false,
+      sourcePort: e.sourcePort || null,
+      targetPort: e.targetPort || null,
+      waypoints: e.waypoints || []
+    })).filter(e => e.source && e.target);
+  }
+
+  function renderFlowchartEdges(group) {
+    // Pre-calculate optimal connection points for all edges
+    calculateEdgeRoutes();
+
+    const filter = document.getElementById('edge-filter').value;
+    const edgesToRender = filter === 'transitive'
+      ? flowchartEdges.filter(e => !e.redundant)
+      : flowchartEdges;
+
+    // Add invisible wider hit area for easier edge clicking
+    group.selectAll('path.edge-hitarea')
+      .data(edgesToRender)
+      .enter()
+      .append('path')
+      .attr('class', 'edge-hitarea')
+      .attr('d', d => getOrthogonalPath(d))
+      .attr('stroke', 'rgba(0,0,0,0.001)')  // Nearly invisible but captures events
+      .attr('stroke-width', 20)
+      .attr('fill', 'none')
+      .attr('stroke-linecap', 'round')
+      .style('cursor', 'pointer')
+      .style('pointer-events', 'stroke')  // Explicitly capture pointer events on stroke
+      .on('click', (event, d) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onEdgeClick(d);
+      });
+
+    // Visible edge
+    group.selectAll('path.edge')
+      .data(edgesToRender)
+      .enter()
+      .append('path')
+      .attr('class', 'edge')
+      .attr('d', d => getOrthogonalPath(d))
+      .attr('stroke', d => d.redundant ? '#c62828' : '#555')
+      .attr('stroke-width', 3)
+      .attr('fill', 'none')
+      .attr('stroke-dasharray', d => d.target.status === 'Goal' ? '6,4' : 'none')
+      .attr('marker-end', d => d.redundant ? 'url(#arrowhead-red)' : 'url(#arrowhead)')
+      .style('pointer-events', 'none');  // Let hitarea handle events
+  }
+
+  function applyEdgeFilter() {
+    // Re-render edges with the new filter
+    const edgesGroup = flowchartG.select('g.edges');
+    edgesGroup.selectAll('path.edge').remove();
+    edgesGroup.selectAll('path.edge-hitarea').remove();
+
+    calculateEdgeRoutes();
+
+    const filter = document.getElementById('edge-filter').value;
+    const edgesToRender = filter === 'transitive'
+      ? flowchartEdges.filter(e => !e.redundant)
+      : flowchartEdges;
+
+    // Show/hide redundant edge legend
+    const redundantLegend = document.getElementById('redundant-edge-legend');
+    if (redundantLegend) {
+      redundantLegend.style.display = filter === 'all' ? 'flex' : 'none';
+    }
+
+    // Add invisible wider hit area for easier edge clicking
+    edgesGroup.selectAll('path.edge-hitarea')
+      .data(edgesToRender)
+      .enter()
+      .append('path')
+      .attr('class', 'edge-hitarea')
+      .attr('d', d => getOrthogonalPath(d))
+      .attr('stroke', 'rgba(0,0,0,0.001)')  // Nearly invisible but captures events
+      .attr('stroke-width', 20)
+      .attr('fill', 'none')
+      .attr('stroke-linecap', 'round')
+      .style('cursor', 'pointer')
+      .style('pointer-events', 'stroke')  // Explicitly capture pointer events on stroke
+      .on('click', (event, d) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onEdgeClick(d);
+      });
+
+    // Visible edge
+    edgesGroup.selectAll('path.edge')
+      .data(edgesToRender)
+      .enter()
+      .append('path')
+      .attr('class', 'edge')
+      .attr('d', d => getOrthogonalPath(d))
+      .attr('stroke', d => d.redundant ? '#c62828' : '#555')
+      .attr('stroke-width', 3)
+      .attr('fill', 'none')
+      .attr('stroke-dasharray', d => d.target.status === 'Goal' ? '6,4' : 'none')
+      .attr('marker-end', d => d.redundant ? 'url(#arrowhead-red)' : 'url(#arrowhead)')
+      .style('pointer-events', 'none');
+
+    // Reset any highlighting and selection
+    highlightedNodeId = null;
+    deselectEdge();
+  }
+
+  function calculateEdgeRoutes() {
+    // For each edge, use custom ports if set, otherwise default to top/bottom
+    flowchartEdges.forEach(edge => {
+      if (!edge.sourcePort) edge.sourcePort = 'top';
+      if (!edge.targetPort) edge.targetPort = 'bottom';
+    });
+
+    // Assign stagger offsets for edges sharing the same target to prevent overlap
+    const edgesByTarget = {};
+    flowchartEdges.forEach(edge => {
+      const key = edge.target.id;
+      if (!edgesByTarget[key]) edgesByTarget[key] = [];
+      edgesByTarget[key].push(edge);
+    });
+
+    // Sort edges by source X position and assign offsets
+    Object.values(edgesByTarget).forEach(edges => {
+      if (edges.length > 1) {
+        // Sort by source X position (left to right)
+        edges.sort((a, b) => a.source.x - b.source.x);
+        edges.forEach((edge, i) => {
+          edge.staggerIndex = i;
+          edge.staggerTotal = edges.length;
+        });
+      } else {
+        edges[0].staggerIndex = 0;
+        edges[0].staggerTotal = 1;
+      }
+    });
+  }
+
+  function getPortPosition(node, port) {
+    // Always return the exact center of each side
+    if (port === 'top') {
+      return { x: node.x, y: node.y - node.height / 2 };
+    } else if (port === 'bottom') {
+      return { x: node.x, y: node.y + node.height / 2 };
+    } else if (port === 'left') {
+      return { x: node.x - node.width / 2, y: node.y };
+    } else if (port === 'right') {
+      return { x: node.x + node.width / 2, y: node.y };
+    }
+    // Default to top center
+    return { x: node.x, y: node.y - node.height / 2 };
+  }
+
+  function getOrthogonalPath(d) {
+    // Ensure ports are set
+    if (!d.sourcePort) d.sourcePort = 'top';
+    if (!d.targetPort) d.targetPort = 'bottom';
+
+    const sPos = getPortPosition(d.source, d.sourcePort);
+    const tPos = getPortPosition(d.target, d.targetPort);
+
+    const sx = sPos.x, sy = sPos.y;
+    const tx = tPos.x, ty = tPos.y;
+
+    // If edge has custom waypoints, connect them with orthogonal segments
+    if (d.waypoints && d.waypoints.length > 0) {
+      let path = `M ${sx} ${sy}`;
+      let prevX = sx, prevY = sy;
+
+      d.waypoints.forEach(wp => {
+        // Add orthogonal connection: first horizontal, then vertical
+        // (or just straight if already aligned)
+        if (Math.abs(prevX - wp.x) < 3) {
+          // Vertically aligned, go straight
+          path += ` L ${wp.x} ${wp.y}`;
+        } else if (Math.abs(prevY - wp.y) < 3) {
+          // Horizontally aligned, go straight
+          path += ` L ${wp.x} ${wp.y}`;
+        } else {
+          // Need orthogonal routing: go horizontal first, then vertical
+          path += ` L ${wp.x} ${prevY} L ${wp.x} ${wp.y}`;
+        }
+        prevX = wp.x;
+        prevY = wp.y;
+      });
+
+      // Connect last waypoint to target
+      if (Math.abs(prevX - tx) < 3) {
+        path += ` L ${tx} ${ty}`;
+      } else if (Math.abs(prevY - ty) < 3) {
+        path += ` L ${tx} ${ty}`;
+      } else {
+        path += ` L ${tx} ${prevY} L ${tx} ${ty}`;
+      }
+      return path;
+    }
+
+    // Direct line if perfectly aligned
+    if (Math.abs(sx - tx) < 3) {
+      return `M ${sx} ${sy} L ${tx} ${ty}`;
+    }
+
+    // Orthogonal routing: vertical from source, horizontal, vertical to target
+    const midY = (sy + ty) / 2;
+    return `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`;
+  }
+
+  function renderFlowchartNodes(group) {
+    // Setup drag behavior for nodes
+    const nodeDrag = d3.drag()
+      .on('start', onNodeDragStart)
+      .on('drag', onNodeDrag)
+      .on('end', onNodeDragEnd);
+
+    const nodeGroups = group.selectAll('g.node')
+      .data(flowchartNodes)
+      .enter()
+      .append('g')
+      .attr('class', 'node')
+      .attr('transform', d => `translate(${d.x - d.width/2}, ${d.y - d.height/2})`)
+      .style('cursor', 'grab')
+      .call(nodeDrag)
+      .on('dblclick', (event, d) => {
+        event.stopPropagation();
+        openTask(d.id);
+      });
+
+    // Node rectangle - use status color as fill with white text
+    nodeGroups.append('rect')
+      .attr('width', d => d.width)
+      .attr('height', d => d.height)
+      .attr('rx', 8)
+      .attr('ry', 8)
+      .attr('fill', d => STATUS_COLORS[d.status] || '#999')
+      .attr('stroke', d => {
+        // Slightly darker border
+        const color = STATUS_COLORS[d.status] || '#999';
+        return d3.color(color).darker(0.3).toString();
+      })
+      .attr('stroke-width', 2);
+
+    // Node label - white text with wrapping
+    nodeGroups.each(function(d) {
+      const g = d3.select(this);
+      const text = d.label;
+      const maxWidth = d.width - 20; // Padding
+      const lineHeight = 18;
+      const fontSize = 14;
+
+      // Word wrap function
+      function wrapText(text, maxW) {
+        const words = text.split(/\s+/);
+        const lines = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+          const testLine = currentLine ? currentLine + ' ' + word : word;
+          // Approximate width: ~8px per character at 14px font
+          const testWidth = testLine.length * 8;
+          if (testWidth > maxW && currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine) lines.push(currentLine);
+
+        // Limit to 2 lines max
+        if (lines.length > 2) {
+          lines.length = 2;
+          lines[1] = lines[1].substring(0, lines[1].length - 3) + '...';
+        }
+        return lines;
+      }
+
+      const lines = wrapText(text, maxWidth);
+      const totalHeight = lines.length * lineHeight;
+      const startY = (d.height - totalHeight) / 2 + lineHeight / 2 + 2;
+
+      lines.forEach((line, i) => {
+        g.append('text')
+          .attr('x', d.width / 2)
+          .attr('y', startY + i * lineHeight)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('fill', '#fff')
+          .attr('font-size', fontSize + 'px')
+          .attr('font-weight', '500')
+          .attr('font-family', 'Inter, sans-serif')
+          .text(line);
+      });
+    });
+
+    // Add connector dots for edge creation (appear on hover)
+    renderNodeConnectors(nodeGroups);
+  }
+
+  let highlightedNodeId = null;
+
+  function highlightNodeEdges(nodeId) {
+    // Clear any edge selection first
+    if (selectedEdge) {
+      flowchartG.selectAll('.port-handle').remove();
+      flowchartG.selectAll('.segment-handle').remove();
+      selectedEdge = null;
+    }
+
+    // If clicking the same node, toggle off
+    if (highlightedNodeId === nodeId) {
+      // Reset all edges to default colors (preserving redundant coloring)
+      flowchartG.selectAll('path.edge')
+        .attr('stroke', d => d.redundant ? '#c62828' : '#555')
+        .attr('stroke-width', 3);
+      // Reset node highlight
+      flowchartG.selectAll('g.node rect')
+        .attr('stroke', d => {
+          const color = STATUS_COLORS[d.status] || '#999';
+          return d3.color(color).darker(0.3).toString();
+        })
+        .attr('stroke-width', 2);
+      highlightedNodeId = null;
+      return;
+    }
+
+    highlightedNodeId = nodeId;
+
+    // Reset all nodes first
+    flowchartG.selectAll('g.node rect')
+      .attr('stroke', d => {
+        const color = STATUS_COLORS[d.status] || '#999';
+        return d3.color(color).darker(0.3).toString();
+      })
+      .attr('stroke-width', 2);
+
+    // Highlight the selected node with blue border
+    flowchartG.selectAll('g.node')
+      .filter(d => d.id === nodeId)
+      .select('rect')
+      .attr('stroke', '#2196f3')
+      .attr('stroke-width', 3);
+
+    // Reset all edges first (preserving redundant coloring)
+    flowchartG.selectAll('path.edge')
+      .attr('stroke', d => d.redundant ? '#c62828' : '#555')
+      .attr('stroke-width', 3);
+
+    // Highlight edges connected to this node (incoming or outgoing)
+    // Redundant edges use darker red when highlighted, normal edges use blue
+    flowchartG.selectAll('path.edge')
+      .filter(d => d.source.id === nodeId || d.target.id === nodeId)
+      .attr('stroke', d => d.redundant ? '#FF8C00' : '#2196f3')
+      .attr('stroke-width', 4)
+      .raise(); // Bring highlighted edges to front
+  }
+
+  // --- Node Dragging with Snap-to-Grid ---
+
+  function onNodeDragStart(event, d) {
+    // Store initial mouse position relative to node center
+    dragState = {
+      startNodeX: d.x,
+      startNodeY: d.y,
+      startMouseX: event.x,
+      startMouseY: event.y,
+      node: d,
+      moved: false
+    };
+    d3.select(this).style('cursor', 'grabbing').raise();
+    // Deselect any selected edge
+    deselectEdge();
+  }
+
+  function onNodeDrag(event, d) {
+    // Calculate how far mouse has moved from start
+    const mouseDx = event.x - dragState.startMouseX;
+    const mouseDy = event.y - dragState.startMouseY;
+
+    // Check if we've moved past threshold
+    if (Math.abs(mouseDx) > DRAG_THRESHOLD || Math.abs(mouseDy) > DRAG_THRESHOLD) {
+      dragState.moved = true;
+    }
+
+    if (!dragState.moved) return;
+
+    // New position = original position + mouse delta (keeps node centered on cursor)
+    const newX = dragState.startNodeX + mouseDx;
+    const newY = dragState.startNodeY + mouseDy;
+
+    // Calculate snap position
+    const snapped = calculateSnapPosition(newX, newY, d);
+    d.x = snapped.x;
+    d.y = snapped.y;
+
+    // Update node position
+    d3.select(this).attr('transform', `translate(${d.x - d.width/2}, ${d.y - d.height/2})`);
+
+    // Update connected edges
+    updateConnectedEdges(d);
+
+    // Draw alignment guides
+    drawAlignmentGuides(snapped.guides);
+  }
+
+  function onNodeDragEnd(event, d) {
+    d3.select(this).style('cursor', 'grab');
+
+    // Remove alignment guides
+    flowchartG.selectAll('.alignment-guide').remove();
+
+    if (dragState && dragState.moved) {
+      // Save position to server
+      saveNodePosition(d);
+      d.hasCustomPosition = true;
+    } else {
+      // Was a click, not a drag - toggle edge highlighting
+      highlightNodeEdges(d.id);
+      // Set flag to prevent SVG click handler from firing right after
+      justFinishedNodeInteraction = true;
+    }
+
+    dragState = null;
+  }
+
+  function calculateSnapPosition(x, y, excludeNode) {
+    let snapX = x, snapY = y;
+    const guides = [];
+
+    flowchartNodes.forEach(n => {
+      if (n.id === excludeNode.id) return;
+
+      // Check horizontal alignment (X coordinates match)
+      if (Math.abs(n.x - x) < SNAP_THRESHOLD) {
+        snapX = n.x;
+        guides.push({
+          type: 'vertical',
+          x: n.x,
+          y1: Math.min(n.y, y) - 100,
+          y2: Math.max(n.y, y) + 100
+        });
+      }
+
+      // Check vertical alignment (Y coordinates match)
+      if (Math.abs(n.y - y) < SNAP_THRESHOLD) {
+        snapY = n.y;
+        guides.push({
+          type: 'horizontal',
+          y: n.y,
+          x1: Math.min(n.x, x) - 100,
+          x2: Math.max(n.x, x) + 100
+        });
+      }
+    });
+
+    return { x: snapX, y: snapY, guides };
+  }
+
+  function drawAlignmentGuides(guides) {
+    // Remove existing guides
+    flowchartG.selectAll('.alignment-guide').remove();
+
+    guides.forEach(g => {
+      if (g.type === 'vertical') {
+        flowchartG.append('line')
+          .attr('class', 'alignment-guide')
+          .attr('x1', g.x).attr('y1', g.y1)
+          .attr('x2', g.x).attr('y2', g.y2)
+          .attr('stroke', '#2196f3')
+          .attr('stroke-dasharray', '5,5')
+          .attr('stroke-width', 1)
+          .style('pointer-events', 'none');
+      } else {
+        flowchartG.append('line')
+          .attr('class', 'alignment-guide')
+          .attr('x1', g.x1).attr('y1', g.y)
+          .attr('x2', g.x2).attr('y2', g.y)
+          .attr('stroke', '#2196f3')
+          .attr('stroke-dasharray', '5,5')
+          .attr('stroke-width', 1)
+          .style('pointer-events', 'none');
+      }
+    });
+  }
+
+  function updateConnectedEdges(node) {
+    // Update edges connected to this node
+    flowchartEdges.forEach(edge => {
+      const isSource = edge.source.id === node.id;
+      const isTarget = edge.target.id === node.id;
+
+      if (!isSource && !isTarget) return;
+
+      // Update the source/target coordinates
+      if (isSource) {
+        edge.source.x = node.x;
+        edge.source.y = node.y;
+      }
+      if (isTarget) {
+        edge.target.x = node.x;
+        edge.target.y = node.y;
+      }
+
+      // If edge has waypoints, adjust the nearest waypoint(s) to move with the node
+      if (edge.waypoints && edge.waypoints.length > 0) {
+        if (isSource) {
+          // Move the first waypoint's alignment coordinate with the source node
+          const sourcePos = getPortPosition(edge.source, edge.sourcePort);
+          const firstWp = edge.waypoints[0];
+          if (edge.sourcePort === 'top' || edge.sourcePort === 'bottom') {
+            // Vertical port - waypoint x should follow port x
+            firstWp.x = sourcePos.x;
+          } else {
+            // Horizontal port - waypoint y should follow port y
+            firstWp.y = sourcePos.y;
+          }
+        }
+
+        if (isTarget) {
+          // Move the last waypoint's alignment coordinate with the target node
+          const targetPos = getPortPosition(edge.target, edge.targetPort);
+          const lastWp = edge.waypoints[edge.waypoints.length - 1];
+          if (edge.targetPort === 'top' || edge.targetPort === 'bottom') {
+            // Vertical port - waypoint x should follow port x
+            lastWp.x = targetPos.x;
+          } else {
+            // Horizontal port - waypoint y should follow port y
+            lastWp.y = targetPos.y;
+          }
+        }
+      }
+    });
+
+    // Update edge paths for connected edges
+    flowchartG.selectAll('path.edge')
+      .filter(d => d.source.id === node.id || d.target.id === node.id)
+      .attr('d', d => getOrthogonalPath(d));
+    flowchartG.selectAll('path.edge-hitarea')
+      .filter(d => d.source.id === node.id || d.target.id === node.id)
+      .attr('d', d => getOrthogonalPath(d));
+
+    // Update handles if edge is selected and involves this node
+    if (selectedEdge && (selectedEdge.source.id === node.id || selectedEdge.target.id === node.id)) {
+      flowchartG.selectAll('.port-handle').remove();
+      flowchartG.selectAll('.segment-handle').remove();
+      renderPortHandles(selectedEdge.source, selectedEdge, true);
+      renderPortHandles(selectedEdge.target, selectedEdge, false);
+      renderSegmentHandles(selectedEdge);
+    }
+  }
+
+  function updateEdgePath(edge) {
+    // Update both visible edge and hitarea
+    const path = getOrthogonalPath(edge);
+    flowchartG.selectAll('path.edge')
+      .filter(d => d === edge)
+      .attr('d', path);
+    flowchartG.selectAll('path.edge-hitarea')
+      .filter(d => d === edge)
+      .attr('d', path);
+  }
+
+  async function saveNodePosition(node) {
+    try {
+      await fetch('/api/flowchart/node-position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task_id: node.id,
+          x: node.x,
+          y: node.y
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save node position:', error);
+    }
+  }
+
+  // --- Edge Selection and Editing ---
+
+  function onEdgeClick(edge) {
+    // Prevent SVG click handler from firing right after
+    justFinishedNodeInteraction = true;
+
+    // Toggle edge selection
+    const isCurrentlySelected = selectedEdge &&
+      selectedEdge.source.id === edge.source.id &&
+      selectedEdge.target.id === edge.target.id;
+
+    if (isCurrentlySelected) {
+      deselectEdge();
+    } else {
+      selectEdge(edge);
+    }
+  }
+
+  function deselectEdge() {
+    if (!selectedEdge) return;
+
+    // Reset edge style
+    flowchartG.selectAll('path.edge')
+      .filter(d => d === selectedEdge)
+      .attr('stroke', d => d.redundant ? '#c62828' : '#555')
+      .attr('stroke-width', 3)
+      .classed('edge-selected', false);
+
+    // Remove port handles and segment handles
+    flowchartG.selectAll('.port-handle').remove();
+    flowchartG.selectAll('.segment-handle').remove();
+
+    selectedEdge = null;
+  }
+
+  function selectEdge(edge) {
+    // Deselect previous
+    deselectEdge();
+    highlightedNodeId = null;
+
+    selectedEdge = edge;
+
+    // Highlight the edge
+    flowchartG.selectAll('path.edge')
+      .filter(d => d === edge)
+      .attr('stroke', '#2196f3')
+      .attr('stroke-width', 4)
+      .classed('edge-selected', true)
+      .raise();
+
+    // Clean up any redundant waypoints and save if changed
+    const originalWaypointsJson = JSON.stringify(edge.waypoints || []);
+    cleanupWaypoints(edge);
+    const cleanedWaypointsJson = JSON.stringify(edge.waypoints || []);
+    if (originalWaypointsJson !== cleanedWaypointsJson) {
+      updateEdgePath(edge);
+      saveEdgeCustomization(edge);
+    }
+
+    // Show port handles on source and target nodes
+    renderPortHandles(edge.source, edge, true);
+    renderPortHandles(edge.target, edge, false);
+
+    // Render segment handles (waypoint handles at midpoint of each segment)
+    renderSegmentHandles(edge);
+  }
+
+  // --- Port Handle Rendering ---
+
+  function renderPortHandles(node, edge, isSource) {
+    const ports = ['top', 'bottom', 'left', 'right'];
+    const activePort = isSource ? edge.sourcePort : edge.targetPort;
+
+    ports.forEach(port => {
+      const pos = getPortPosition(node, port);
+      const isActive = port === activePort;
+
+      flowchartG.append('circle')
+        .attr('class', 'port-handle')
+        .attr('cx', pos.x)
+        .attr('cy', pos.y)
+        .attr('r', 8)
+        .attr('fill', isActive ? '#2196f3' : '#fff')
+        .attr('stroke', '#2196f3')
+        .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .on('click', (event) => {
+          event.stopPropagation();
+          changeEdgePort(edge, isSource, port);
+        });
+    });
+  }
+
+  function changeEdgePort(edge, isSource, newPort) {
+    if (isSource) {
+      edge.sourcePort = newPort;
+    } else {
+      edge.targetPort = newPort;
+    }
+
+    // Update edge path
+    updateEdgePath(edge);
+
+    // Re-render port handles
+    flowchartG.selectAll('.port-handle').remove();
+    renderPortHandles(edge.source, edge, true);
+    renderPortHandles(edge.target, edge, false);
+
+    // Save to server
+    saveEdgeCustomization(edge);
+  }
+
+  // --- Waypoint Cleanup ---
+
+  function cleanupWaypoints(edge) {
+    // Remove redundant waypoints, keep only essential corner points
+    if (!edge.waypoints || edge.waypoints.length === 0) return;
+
+    // Safety: clear waypoints if there are too many (indicates corruption)
+    if (edge.waypoints.length > 6) {
+      console.warn(`Edge ${edge.source?.id}->${edge.target?.id} had ${edge.waypoints.length} waypoints, clearing`);
+      edge.waypoints = [];
+      return;
+    }
+
+    const sPos = getPortPosition(edge.source, edge.sourcePort);
+    const tPos = getPortPosition(edge.target, edge.targetPort);
+
+    // Remove duplicate waypoints (same or very close position)
+    const deduped = [];
+    for (const wp of edge.waypoints) {
+      const isDuplicate = deduped.some(existing =>
+        Math.abs(existing.x - wp.x) < 10 && Math.abs(existing.y - wp.y) < 10
+      );
+      // Also skip waypoints too close to source or target
+      const tooCloseToSource = Math.abs(wp.x - sPos.x) < 10 && Math.abs(wp.y - sPos.y) < 10;
+      const tooCloseToTarget = Math.abs(wp.x - tPos.x) < 10 && Math.abs(wp.y - tPos.y) < 10;
+
+      if (!isDuplicate && !tooCloseToSource && !tooCloseToTarget) {
+        deduped.push(wp);
+      }
+    }
+    edge.waypoints = deduped;
+
+    if (edge.waypoints.length === 0) return;
+
+    // Remove collinear waypoints (points that don't create corners)
+    const allPoints = [sPos, ...edge.waypoints, tPos];
+    const essentialWaypoints = [];
+
+    for (let i = 1; i < allPoints.length - 1; i++) {
+      const prev = allPoints[i - 1];
+      const curr = allPoints[i];
+      const next = allPoints[i + 1];
+
+      // Check if all three points are on the same horizontal or vertical line
+      const allHorizontal = Math.abs(prev.y - curr.y) < 5 && Math.abs(curr.y - next.y) < 5;
+      const allVertical = Math.abs(prev.x - curr.x) < 5 && Math.abs(curr.x - next.x) < 5;
+
+      // Keep only if it creates a corner (direction change)
+      if (!allHorizontal && !allVertical) {
+        essentialWaypoints.push({ x: curr.x, y: curr.y });
+      }
+    }
+
+    edge.waypoints = essentialWaypoints;
+  }
+
+  // --- Segment Dragging ---
+
+  function getEdgeSegments(edge) {
+    // Build segments from the edge path for rendering handles
+    const sPos = getPortPosition(edge.source, edge.sourcePort);
+    const tPos = getPortPosition(edge.target, edge.targetPort);
+
+    // Build path points: source -> waypoints -> target
+    const points = [sPos];
+
+    if (edge.waypoints && edge.waypoints.length > 0) {
+      // Add waypoints with orthogonal routing between them
+      let prev = sPos;
+      edge.waypoints.forEach(wp => {
+        // If not aligned, add intermediate corner point
+        if (Math.abs(prev.x - wp.x) > 3 && Math.abs(prev.y - wp.y) > 3) {
+          points.push({ x: wp.x, y: prev.y });
+        }
+        points.push(wp);
+        prev = wp;
+      });
+
+      // Connect last waypoint to target
+      const lastWp = edge.waypoints[edge.waypoints.length - 1];
+      if (Math.abs(lastWp.x - tPos.x) > 3 && Math.abs(lastWp.y - tPos.y) > 3) {
+        points.push({ x: tPos.x, y: lastWp.y });
+      }
+    } else {
+      // No waypoints - use default orthogonal routing
+      if (Math.abs(sPos.x - tPos.x) > 3) {
+        // Need intermediate points for orthogonal routing
+        const midY = (sPos.y + tPos.y) / 2;
+        points.push({ x: sPos.x, y: midY });
+        points.push({ x: tPos.x, y: midY });
+      }
+    }
+
+    // Add target
+    points.push(tPos);
+
+    // Build segments from consecutive points
+    const segments = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+
+      // Skip zero-length segments
+      if (Math.abs(p1.x - p2.x) < 1 && Math.abs(p1.y - p2.y) < 1) continue;
+
+      const isHorizontal = Math.abs(p1.y - p2.y) < 3;
+      const isVertical = Math.abs(p1.x - p2.x) < 3;
+
+      segments.push({
+        index: i,
+        x1: p1.x, y1: p1.y,
+        x2: p2.x, y2: p2.y,
+        isHorizontal,
+        isVertical
+      });
+    }
+
+    return segments;
+  }
+
+  function renderSegmentHandles(edge) {
+    flowchartG.selectAll('.segment-handle').remove();
+
+    // Check if ports are perpendicular (e.g., top-left, right-bottom)
+    // If so, the edge is a direct diagonal which cannot be manipulated
+    const sourcePort = edge.sourcePort || 'top';
+    const targetPort = edge.targetPort || 'bottom';
+    const verticalPorts = ['top', 'bottom'];
+    const horizontalPorts = ['left', 'right'];
+    const sourceIsVertical = verticalPorts.includes(sourcePort);
+    const targetIsVertical = verticalPorts.includes(targetPort);
+
+    // If one port is vertical and the other is horizontal, they're perpendicular
+    // In this case, if there are no waypoints, don't show handles (edge can't be manipulated)
+    if (sourceIsVertical !== targetIsVertical && (!edge.waypoints || edge.waypoints.length === 0)) {
+      return; // Perpendicular ports with no waypoints = unmovable direct line
+    }
+
+    const segments = getEdgeSegments(edge);
+
+    // Merge consecutive collinear segments into single segments
+    const mergedSegments = [];
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+
+      // Check if this segment can be merged with the previous one
+      if (mergedSegments.length > 0) {
+        const lastMerged = mergedSegments[mergedSegments.length - 1];
+
+        // Merge if both are horizontal on the same y
+        if (lastMerged.isHorizontal && seg.isHorizontal && Math.abs(lastMerged.y1 - seg.y1) < 3) {
+          lastMerged.x2 = seg.x2;
+          lastMerged.y2 = seg.y2;
+          continue;
+        }
+        // Merge if both are vertical on the same x
+        if (lastMerged.isVertical && seg.isVertical && Math.abs(lastMerged.x1 - seg.x1) < 3) {
+          lastMerged.x2 = seg.x2;
+          lastMerged.y2 = seg.y2;
+          continue;
+        }
+      }
+
+      // Add as new segment
+      mergedSegments.push({ ...seg, originalIndex: i });
+    }
+
+    // Track handle positions to avoid duplicates
+    const handlePositions = [];
+
+    mergedSegments.forEach((seg, idx) => {
+      // Calculate midpoint of segment
+      const midX = (seg.x1 + seg.x2) / 2;
+      const midY = (seg.y1 + seg.y2) / 2;
+
+      // Skip if there's already a handle very close to this position
+      const isDuplicate = handlePositions.some(pos =>
+        Math.abs(pos.x - midX) < 20 && Math.abs(pos.y - midY) < 20
+      );
+      if (isDuplicate) return;
+
+      handlePositions.push({ x: midX, y: midY });
+
+      // Create drag behavior for the segment
+      const segmentDrag = d3.drag()
+        .on('start', (event) => {
+          event.sourceEvent.stopPropagation();
+        })
+        .on('drag', (event) => onSegmentDrag(event, edge, seg, idx, mergedSegments.length))
+        .on('end', () => {
+          // Clean up redundant waypoints
+          cleanupWaypoints(edge);
+          updateEdgePath(edge);
+          saveEdgeCustomization(edge);
+          // Re-render handles to update positions
+          renderSegmentHandles(edge);
+        });
+
+      // Cursor depends on segment orientation
+      const cursor = seg.isHorizontal ? 'ns-resize' : 'ew-resize';
+
+      // Draw a waypoint handle circle at the midpoint of the segment
+      flowchartG.append('circle')
+        .datum({ seg, idx })
+        .attr('class', 'segment-handle')
+        .attr('cx', midX)
+        .attr('cy', midY)
+        .attr('r', 6)
+        .attr('fill', '#fff')
+        .attr('stroke', '#2196f3')
+        .attr('stroke-width', 2)
+        .style('cursor', cursor)
+        .call(segmentDrag);
+    });
+  }
+
+  function onSegmentDrag(event, edge, segment, segmentIndex, totalSegments) {
+    const sPos = getPortPosition(edge.source, edge.sourcePort);
+    const tPos = getPortPosition(edge.target, edge.targetPort);
+
+    // Initialize waypoints if needed
+    if (!edge.waypoints) {
+      edge.waypoints = [];
+    }
+
+    // Simple approach: edges have 0 or 2 waypoints
+    // When dragging a segment, we update or create the 2 waypoints that define the bend
+
+    if (segment.isHorizontal) {
+      // Horizontal segment: drag up/down (change y)
+      // The two waypoints define the horizontal position of the bend
+      edge.waypoints = [
+        { x: sPos.x, y: event.y },
+        { x: tPos.x, y: event.y }
+      ];
+    } else if (segment.isVertical) {
+      // Vertical segment: drag left/right (change x)
+      // Vertical segments appear when the source and target are horizontally offset
+      // We need to create a U-shape or S-shape path
+
+      const isFirstSegment = segmentIndex === 0;
+      const isLastSegment = segmentIndex === totalSegments - 1;
+
+      if (totalSegments === 1) {
+        // Direct vertical line - convert to bent path
+        const midY = (sPos.y + tPos.y) / 2;
+        edge.waypoints = [
+          { x: event.x, y: midY }
+        ];
+      } else if (isFirstSegment) {
+        // Moving first vertical segment
+        if (edge.waypoints.length >= 2) {
+          edge.waypoints[0].x = event.x;
+          edge.waypoints[1].x = event.x;
+        } else {
+          const midY = (sPos.y + tPos.y) / 2;
+          edge.waypoints = [
+            { x: event.x, y: midY },
+            { x: tPos.x, y: midY }
+          ];
+        }
+      } else if (isLastSegment) {
+        // Moving last vertical segment
+        if (edge.waypoints.length >= 2) {
+          edge.waypoints[edge.waypoints.length - 2].x = event.x;
+          edge.waypoints[edge.waypoints.length - 1].x = event.x;
+        } else {
+          const midY = (sPos.y + tPos.y) / 2;
+          edge.waypoints = [
+            { x: sPos.x, y: midY },
+            { x: event.x, y: midY }
+          ];
+        }
+      }
+    }
+
+    // Cap waypoints at 4 maximum
+    if (edge.waypoints.length > 4) {
+      edge.waypoints = edge.waypoints.slice(0, 4);
+    }
+
+    // Update edge path
+    updateEdgePath(edge);
+
+    // Re-render segment handles to update their positions
+    renderSegmentHandles(edge);
+  }
+
+  function pointToSegmentDistance(px, py, p1, p2) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const lengthSquared = dx * dx + dy * dy;
+
+    if (lengthSquared === 0) {
+      return Math.sqrt((px - p1.x) ** 2 + (py - p1.y) ** 2);
+    }
+
+    let t = ((px - p1.x) * dx + (py - p1.y) * dy) / lengthSquared;
+    t = Math.max(0, Math.min(1, t));
+
+    const projX = p1.x + t * dx;
+    const projY = p1.y + t * dy;
+
+    return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
+  }
+
+  async function saveEdgeCustomization(edge) {
+    try {
+      await fetch('/api/flowchart/edge-customization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_id: edge.source.id,
+          to_id: edge.target.id,
+          source_port: edge.sourcePort,
+          target_port: edge.targetPort,
+          waypoints: edge.waypoints || []
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save edge customization:', error);
+    }
+  }
+
+  // --- Edge Segment Dragging ---
+
+  let edgeDragState = null;
+  const EDGE_DRAG_THRESHOLD = 5;
+
+  function onEdgeDragStart(event, edge) {
+    const sourceEvent = event.sourceEvent || event;
+    if (sourceEvent.stopPropagation) sourceEvent.stopPropagation();
+
+    // Get click position in graph coordinates
+    const transform = d3.zoomTransform(flowchartSvg.node());
+    const [clickX, clickY] = transform.invert(d3.pointer(sourceEvent, flowchartSvg.node()));
+
+    // Get all points including auto-generated orthogonal corners
+    const pathPoints = getEdgePathPoints(edge);
+
+    // Find which segment was clicked
+    let minDist = Infinity;
+    let segmentIndex = 0;
+
+    for (let i = 0; i < pathPoints.length - 1; i++) {
+      const dist = pointToSegmentDistance(clickX, clickY, pathPoints[i], pathPoints[i + 1]);
+      if (dist < minDist) {
+        minDist = dist;
+        segmentIndex = i;
+      }
+    }
+
+    // Safely get segment points
+    const segStart = pathPoints[segmentIndex] || pathPoints[0];
+    const segEnd = pathPoints[segmentIndex + 1] || pathPoints[pathPoints.length - 1];
+
+    // Determine if segment is horizontal or vertical
+    const isHorizontal = Math.abs(segStart.y - segEnd.y) < 3;
+    const isVertical = Math.abs(segStart.x - segEnd.x) < 3;
+
+    // Check if this is a draggable segment (not first or last)
+    const canDrag = pathPoints.length > 2 && segmentIndex > 0 && segmentIndex < pathPoints.length - 2;
+
+    edgeDragState = {
+      edge: edge,
+      segmentIndex: segmentIndex,
+      isHorizontal: isHorizontal,
+      isVertical: isVertical,
+      canDrag: canDrag,
+      startX: clickX,
+      startY: clickY,
+      moved: false,
+      originalWaypoints: edge.waypoints ? JSON.parse(JSON.stringify(edge.waypoints)) : []
+    };
+  }
+
+  function onEdgeDrag(event, edge) {
+    if (!edgeDragState) return;
+
+    // Check if this is the same edge (compare by source/target IDs)
+    const isSameEdge = edgeDragState.edge.source.id === edge.source.id &&
+                       edgeDragState.edge.target.id === edge.target.id;
+    if (!isSameEdge) return;
+
+    // Get current mouse position in graph coordinates
+    const transform = d3.zoomTransform(flowchartSvg.node());
+    const sourceEvent = event.sourceEvent || event;
+    const [mouseX, mouseY] = transform.invert(d3.pointer(sourceEvent, flowchartSvg.node()));
+
+    const deltaX = mouseX - edgeDragState.startX;
+    const deltaY = mouseY - edgeDragState.startY;
+
+    // Check if moved past threshold
+    if (Math.abs(deltaX) > EDGE_DRAG_THRESHOLD || Math.abs(deltaY) > EDGE_DRAG_THRESHOLD) {
+      edgeDragState.moved = true;
+    }
+
+    // Only drag if we've moved and this segment can be dragged
+    if (!edgeDragState.moved || !edgeDragState.canDrag) return;
+
+    // Initialize waypoints if needed
+    if (!edge.waypoints || edge.waypoints.length === 0) {
+      // Create default waypoints from the auto-generated path
+      const sPos = getPortPosition(edge.source, edge.sourcePort);
+      const tPos = getPortPosition(edge.target, edge.targetPort);
+      const midY = (sPos.y + tPos.y) / 2;
+
+      // Default orthogonal path has a horizontal segment in the middle
+      edge.waypoints = [
+        { x: sPos.x, y: midY },
+        { x: tPos.x, y: midY }
+      ];
+      edgeDragState.originalWaypoints = JSON.parse(JSON.stringify(edge.waypoints));
+    }
+
+    // For middle segments, we move the waypoints that form this segment
+    // The segmentIndex in path points corresponds to waypoint indices differently
+    // We need to figure out which waypoints to modify
+
+    if (edgeDragState.isHorizontal) {
+      // Horizontal segment: can only move up/down (change Y)
+      // Find waypoints that share this Y coordinate and adjust them
+      const origWaypoints = edgeDragState.originalWaypoints;
+
+      edge.waypoints = origWaypoints.map((wp, i) => {
+        // Move waypoints that are part of this horizontal segment
+        const newWp = { ...wp };
+        // Check if this waypoint is part of the dragged segment
+        if (i > 0 || origWaypoints.length <= 2) {
+          // Simple approach: move all waypoints vertically
+          // More sophisticated: only move those on the segment
+          newWp.y = wp.y + deltaY;
+        }
+        return newWp;
+      });
+    } else if (edgeDragState.isVertical) {
+      // Vertical segment: can only move left/right (change X)
+      const origWaypoints = edgeDragState.originalWaypoints;
+
+      edge.waypoints = origWaypoints.map((wp, i) => {
+        const newWp = { ...wp };
+        newWp.x = wp.x + deltaX;
+        return newWp;
+      });
+    }
+
+    // Update the edge path (both visible and hitarea)
+    updateEdgePath(edge);
+
+    // Update segment handles if edge is selected
+    if (selectedEdge === edge) {
+      renderSegmentHandles(edge);
+    }
+  }
+
+  function onEdgeDragEnd(event, edge) {
+    if (!edgeDragState) {
+      // No drag state, but still select the edge on click
+      if (selectedEdge && selectedEdge.source.id === edge.source.id && selectedEdge.target.id === edge.target.id) {
+        deselectEdge();
+      } else {
+        selectEdge(edge);
+      }
+      return;
+    }
+
+    // Check if this is the same edge (compare by source/target IDs)
+    const isSameEdge = edgeDragState.edge.source.id === edge.source.id &&
+                       edgeDragState.edge.target.id === edge.target.id;
+
+    if (!isSameEdge) {
+      edgeDragState = null;
+      return;
+    }
+
+    if (edgeDragState.moved) {
+      // Was a drag - save the edge customization
+      if (edge.waypoints && edge.waypoints.length > 0) {
+        saveEdgeCustomization(edge);
+      }
+    } else {
+      // Was a click - select/deselect the edge
+      const isCurrentlySelected = selectedEdge &&
+        selectedEdge.source.id === edge.source.id &&
+        selectedEdge.target.id === edge.target.id;
+
+      if (isCurrentlySelected) {
+        // Already selected, deselect
+        deselectEdge();
+      } else {
+        // Select this edge
+        selectEdge(edge);
+      }
+    }
+
+    edgeDragState = null;
+  }
+
+  function getEdgePathPoints(edge) {
+    // Returns all points in the edge path including auto-generated corners
+    const sPos = getPortPosition(edge.source, edge.sourcePort);
+    const tPos = getPortPosition(edge.target, edge.targetPort);
+
+    if (edge.waypoints && edge.waypoints.length > 0) {
+      // Build points from waypoints with orthogonal connections
+      const points = [sPos];
+      let prevX = sPos.x, prevY = sPos.y;
+
+      edge.waypoints.forEach(wp => {
+        if (Math.abs(prevX - wp.x) >= 3 && Math.abs(prevY - wp.y) >= 3) {
+          // Need orthogonal corner
+          points.push({ x: wp.x, y: prevY });
+        }
+        points.push({ x: wp.x, y: wp.y });
+        prevX = wp.x;
+        prevY = wp.y;
+      });
+
+      // Connect to target
+      if (Math.abs(prevX - tPos.x) >= 3 && Math.abs(prevY - tPos.y) >= 3) {
+        points.push({ x: tPos.x, y: prevY });
+      }
+      points.push(tPos);
+
+      return points;
+    }
+
+    // Default orthogonal path
+    if (Math.abs(sPos.x - tPos.x) < 3) {
+      return [sPos, tPos];
+    }
+
+    const midY = (sPos.y + tPos.y) / 2;
+    return [
+      sPos,
+      { x: sPos.x, y: midY },
+      { x: tPos.x, y: midY },
+      tPos
+    ];
+  }
+
+  // --- Edge Creation (Drag from Node Connector) ---
+
+  function renderNodeConnectors(nodeGroup) {
+    const ports = [
+      { name: 'top', dx: 0, dy: -0.5 },
+      { name: 'bottom', dx: 0, dy: 0.5 },
+      { name: 'left', dx: -0.5, dy: 0 },
+      { name: 'right', dx: 0.5, dy: 0 }
+    ];
+
+    const connectorDrag = d3.drag()
+      .on('start', onConnectorDragStart)
+      .on('drag', onConnectorDrag)
+      .on('end', onConnectorDragEnd);
+
+    ports.forEach(port => {
+      nodeGroup.append('circle')
+        .attr('class', 'node-connector')
+        .attr('data-port', port.name)
+        .attr('cx', d => d.width / 2 + port.dx * d.width)
+        .attr('cy', d => d.height / 2 + port.dy * d.height)
+        .attr('r', 6)
+        .attr('fill', '#4caf50')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2)
+        .style('cursor', 'crosshair')
+        .call(connectorDrag);
+    });
+  }
+
+  function onConnectorDragStart(event, d) {
+    event.sourceEvent.stopPropagation();
+
+    const port = d3.select(this).attr('data-port');
+    edgeCreationState = {
+      sourceNode: d,
+      sourcePort: port,
+      startX: getPortPosition(d, port).x,
+      startY: getPortPosition(d, port).y
+    };
+
+    // Create preview line
+    flowchartG.append('line')
+      .attr('class', 'edge-preview')
+      .attr('x1', edgeCreationState.startX)
+      .attr('y1', edgeCreationState.startY)
+      .attr('x2', edgeCreationState.startX)
+      .attr('y2', edgeCreationState.startY)
+      .attr('stroke', '#4caf50')
+      .attr('stroke-width', 2)
+      .attr('stroke-dasharray', '5,5')
+      .style('pointer-events', 'none');
+  }
+
+  function onConnectorDrag(event, d) {
+    if (!edgeCreationState) return;
+
+    // Get position in graph coordinates
+    const nodeGroup = d3.select(this.parentNode);
+    const transform = nodeGroup.attr('transform');
+    const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+    const nodeX = parseFloat(match[1]);
+    const nodeY = parseFloat(match[2]);
+
+    const mouseX = nodeX + event.x;
+    const mouseY = nodeY + event.y;
+
+    // Update preview line
+    flowchartG.select('.edge-preview')
+      .attr('x2', mouseX)
+      .attr('y2', mouseY);
+  }
+
+  function onConnectorDragEnd(event, d) {
+    if (!edgeCreationState) return;
+
+    // Remove preview line
+    flowchartG.select('.edge-preview').remove();
+
+    // Get final position
+    const nodeGroup = d3.select(this.parentNode);
+    const transform = nodeGroup.attr('transform');
+    const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+    const nodeX = parseFloat(match[1]);
+    const nodeY = parseFloat(match[2]);
+
+    const mouseX = nodeX + event.x;
+    const mouseY = nodeY + event.y;
+
+    // Find target node at drop position
+    const targetNode = findNodeAtPosition(mouseX, mouseY);
+
+    if (targetNode && targetNode.id !== edgeCreationState.sourceNode.id) {
+      // Check if edge already exists between these nodes
+      const sourceId = edgeCreationState.sourceNode.id;
+      const targetId = targetNode.id;
+      const edgeExists = flowchartEdges.some(e =>
+        (e.source.id === sourceId && e.target.id === targetId) ||
+        (e.source.id === targetId && e.target.id === sourceId)
+      );
+
+      if (edgeExists) {
+        // Edge already exists, don't create duplicate
+        console.log('Edge already exists between these nodes');
+      } else {
+        // Create dependency edge
+        createDependencyEdge(sourceId, targetId);
+      }
+    }
+
+    edgeCreationState = null;
+  }
+
+  function findNodeAtPosition(x, y) {
+    for (const node of flowchartNodes) {
+      const left = node.x - node.width / 2;
+      const right = node.x + node.width / 2;
+      const top = node.y - node.height / 2;
+      const bottom = node.y + node.height / 2;
+
+      if (x >= left && x <= right && y >= top && y <= bottom) {
+        return node;
+      }
+    }
+    return null;
+  }
+
+  async function createDependencyEdge(fromId, toId) {
+    try {
+      const response = await fetch('/api/create-dependency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from_id: fromId, to_id: toId })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert('Error: ' + data.error);
+        return;
+      }
+
+      // Refresh flowchart to show new edge
+      await refreshFlowchart();
+
+    } catch (error) {
+      console.error('Failed to create dependency:', error);
+      alert('Failed to create dependency');
+    }
+  }
+
+  function zoomFlowchart(factor) {
+    if (!flowchartSvg) return;
+    flowchartSvg.transition().duration(300).call(
+      flowchartZoom.scaleBy, factor
+    );
+  }
+
+  function fitFlowchart() {
+    if (!flowchartSvg || !flowchartNodes.length) return;
+
+    const container = document.getElementById('flowchart-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    // Calculate bounds
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    flowchartNodes.forEach(n => {
+      minX = Math.min(minX, n.x - n.width/2);
+      maxX = Math.max(maxX, n.x + n.width/2);
+      minY = Math.min(minY, n.y - n.height/2);
+      maxY = Math.max(maxY, n.y + n.height/2);
+    });
+
+    const graphWidth = maxX - minX;
+    const graphHeight = maxY - minY;
+    const padding = 50;
+
+    const scale = Math.min(
+      (width - padding * 2) / graphWidth,
+      (height - padding * 2) / graphHeight,
+      1.5
+    );
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    flowchartSvg.transition().duration(500).call(
+      flowchartZoom.transform,
+      d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(scale)
+        .translate(-centerX, -centerY)
+    );
+  }
+
+  function resetFlowchartLayout() {
+    if (!flowchartSvg) return;
+    flowchartSvg.remove();
+    flowchartSvg = null;
+    loadFlowchart();
+  }
+
+  // ========== End Flowchart Functions ==========
+
+  function openTask(id) {
+    fetch(`/task/${id}`)
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById('task-modal').innerHTML = html;
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('task-modal').style.display = 'block';
+
+        const firstInput = document
+          .getElementById('task-modal')
+          ?.querySelector('input, textarea, select');
+
+        if (firstInput) firstInput.focus();
+
+        loadDependentsForEditModal(id);
+      });
+  }
+
+  // Task search functionality
+  let searchDebounceTimer = null;
+  let searchResults = [];
+  let selectedSearchIndex = -1;
+
+  function handleTaskSearchFocus() {
+    // Load all tasks when clicking/focusing on search bar
+    const query = document.getElementById('task-search-input').value;
+    fetch(`/api/search-tasks?q=${encodeURIComponent(query)}`)
+      .then(r => r.json())
+      .then(tasks => {
+        searchResults = tasks;
+        selectedSearchIndex = -1;
+        renderSearchResults(tasks);
+      });
+  }
+
+  function handleTaskSearch(query) {
+    clearTimeout(searchDebounceTimer);
+
+    searchDebounceTimer = setTimeout(() => {
+      fetch(`/api/search-tasks?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(tasks => {
+          searchResults = tasks;
+          selectedSearchIndex = -1;
+          renderSearchResults(tasks);
+        });
+    }, 150);
+  }
+
+  function renderSearchResults(tasks) {
+    const resultsContainer = document.getElementById('task-search-results');
+
+    if (tasks.length === 0) {
+      resultsContainer.innerHTML = '<div style="padding:12px; color:#999; font-size:13px;">No tasks found</div>';
+      resultsContainer.style.display = 'block';
+      return;
+    }
+
+    resultsContainer.innerHTML = tasks.map((task, index) => `
+      <div class="search-result-item ${index === selectedSearchIndex ? 'selected' : ''}"
+           onclick="selectSearchResult(${task.id})"
+           onmouseenter="selectedSearchIndex = ${index}; highlightSearchResult(${index})"
+           style="padding:10px 12px; cursor:pointer; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:#333;">${escapeHtml(task.title)}</span>
+        <span class="status-badge status-${task.status}" style="font-size:11px; padding:2px 6px;">${task.status}</span>
+      </div>
+    `).join('');
+
+    resultsContainer.style.display = 'block';
+  }
+
+  function highlightSearchResult(index) {
+    const items = document.querySelectorAll('.search-result-item');
+    items.forEach((item, i) => {
+      item.style.background = i === index ? '#f0f7ff' : '#fff';
+    });
+  }
+
+  function handleSearchKeydown(event) {
+    const resultsContainer = document.getElementById('task-search-results');
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (searchResults.length > 0) {
+        selectedSearchIndex = Math.min(selectedSearchIndex + 1, searchResults.length - 1);
+        highlightSearchResult(selectedSearchIndex);
+      }
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (searchResults.length > 0) {
+        selectedSearchIndex = Math.max(selectedSearchIndex - 1, 0);
+        highlightSearchResult(selectedSearchIndex);
+      }
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      if (selectedSearchIndex >= 0 && searchResults[selectedSearchIndex]) {
+        selectSearchResult(searchResults[selectedSearchIndex].id);
+      }
+    } else if (event.key === 'Escape') {
+      resultsContainer.style.display = 'none';
+      document.getElementById('task-search-input').blur();
+    }
+  }
+
+  function selectSearchResult(taskId) {
+    document.getElementById('task-search-results').style.display = 'none';
+    document.getElementById('task-search-input').value = '';
+    searchResults = [];
+    selectedSearchIndex = -1;
+    openTask(taskId);
+  }
+
+  // Close search results when clicking outside
+  document.addEventListener('click', function(e) {
+    const searchContainer = document.getElementById('task-search-input')?.parentElement;
+    if (searchContainer && !searchContainer.contains(e.target)) {
+      document.getElementById('task-search-results').style.display = 'none';
+    }
+  });
+
+
+  function openModal() {
+    document.getElementById('redirect-view-input').value = currentView;
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('modal').style.display = 'block';
+  }
+
+  function closeModal() {
+    // If a task is open in the edit modal, refresh dependencies before closing
+    if (currentEditTaskId) {
+      loadDependenciesForEditModal(currentEditTaskId);
+      currentEditTaskId = null;
+    }
+
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('modal').style.display = 'none';
+    document.getElementById('task-modal').style.display = 'none';
+  }
+
+
+  // Recurring task options
+  function toggleRecurringOptions(prefix) {
+    const checkbox = document.getElementById(prefix + '-recurring-checkbox');
+    const options = document.getElementById(prefix + '-recurring-options');
+    options.style.display = checkbox.checked ? 'block' : 'none';
+    if (checkbox.checked) {
+      toggleFrequencyOptions(prefix);
+    }
+  }
+
+  function toggleFrequencyOptions(prefix) {
+    const frequency = document.getElementById(prefix + '-recurrence-frequency').value;
+    const weeklyOptions = document.getElementById(prefix + '-weekly-options');
+    const monthlyOptions = document.getElementById(prefix + '-monthly-options');
+
+    if (weeklyOptions) weeklyOptions.style.display = frequency === 'weekly' ? 'block' : 'none';
+    if (monthlyOptions) monthlyOptions.style.display = frequency === 'monthly' ? 'block' : 'none';
+  }
+
+  function toggleEndOptions(prefix) {
+    const endType = document.querySelector('input[name="recurrence_end_type"]:checked').value;
+    const countInput = document.getElementById(prefix + '-end-count');
+    const dateInput = document.getElementById(prefix + '-end-date');
+
+    if (countInput) countInput.disabled = endType !== 'after';
+    if (dateInput) dateInput.disabled = endType !== 'on_date';
+  }
+
+  // Enable/disable fixed_time based on scheduled datetime (recurring is always enabled)
+  function updateScheduleDependentOptions(prefix) {
+    const scheduledInput = document.getElementById(prefix + '-scheduled-datetime');
+    const hasScheduled = scheduledInput && scheduledInput.value;
+
+    const fixedTimeCheckbox = document.getElementById(prefix + '-fixed-time-checkbox');
+    const fixedTimeLabel = document.getElementById(prefix + '-fixed-time-label');
+
+    if (fixedTimeCheckbox) {
+      fixedTimeCheckbox.disabled = !hasScheduled;
+      if (!hasScheduled) fixedTimeCheckbox.checked = false;
+    }
+    if (fixedTimeLabel) {
+      fixedTimeLabel.style.opacity = hasScheduled ? '1' : '0.5';
+    }
+  }
+
+  // Drag and drop for kanban
+  let draggedTaskId = null;
+  let draggedSourceStatus = null;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    initKanbanDragDrop();
+  });
+
+  function initKanbanDragDrop() {
+    // Add drag event listeners to draggable items
+    document.querySelectorAll('.kanban-column li[draggable="true"]').forEach(item => {
+      item.addEventListener('dragstart', handleDragStart);
+      item.addEventListener('dragend', handleDragEnd);
+    });
+
+    // Add drop zone listeners to Goals column (for blocked tasks)
+    const goalColumn = document.querySelector('.kanban-column[data-status="Goal"]');
+    if (goalColumn) {
+      goalColumn.addEventListener('dragover', handleDragOver);
+      goalColumn.addEventListener('dragleave', handleDragLeave);
+      goalColumn.addEventListener('drop', handleDropToGoal);
+    }
+  }
+
+  function handleDragStart(e) {
+    draggedTaskId = e.target.dataset.taskId;
+    draggedSourceStatus = e.target.dataset.sourceStatus || null;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.kanban-column').forEach(col => {
+      col.classList.remove('drag-over');
+    });
+  }
+
+  function handleDragOver(e) {
+    // Only allow drop if dragging from Blocked column
+    if (draggedSourceStatus === 'Blocked') {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      e.currentTarget.classList.add('drag-over');
+    }
+  }
+
+  function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  async function handleDropToGoal(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+
+    if (!draggedTaskId || draggedSourceStatus !== 'Blocked') return;
+
+    try {
+      const response = await fetch(`/task/${draggedTaskId}/set-goal`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // Reload page to refresh kanban
+        window.location.reload();
+      } else {
+        alert('Failed to convert task to goal');
+      }
+    } catch (error) {
+      console.error('Error setting task as goal:', error);
+      alert('Error setting task as goal');
+    }
+
+    draggedTaskId = null;
+    draggedSourceStatus = null;
+  }
+
+  // Track last completed task for undo (persisted in localStorage)
+  let lastCompletedTaskId = null;
+  let toastTimeout = null;
+
+  // Check for pending toast on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const pendingToast = localStorage.getItem('pendingToast');
+    if (pendingToast) {
+      const toastData = JSON.parse(pendingToast);
+      // Check if toast is still valid (within 5 seconds)
+      if (Date.now() - toastData.timestamp < 5000) {
+        lastCompletedTaskId = toastData.taskId;
+        showToast();
+      }
+      localStorage.removeItem('pendingToast');
+    }
+  });
+
+  // Task modal functions (need to be in global scope for dynamically loaded modal)
+  async function quickComplete(taskId) {
+    try {
+      const response = await fetch(`/task/${taskId}/quick-complete`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // Store toast data in localStorage before reload
+        localStorage.setItem('pendingToast', JSON.stringify({
+          taskId: data.task_id,
+          timestamp: Date.now()
+        }));
+        // Reload page immediately
+        window.location.reload();
+      } else if (data.error) {
+        alert(data.error + (data.incomplete ? ': ' + data.incomplete.join(', ') : ''));
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+      alert('Error completing task');
+    }
+  }
+
+  function showToast() {
+    const toast = document.getElementById('toast');
+    toast.style.display = 'block';
+    // Auto-hide after 4 seconds
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      toast.style.display = 'none';
+      lastCompletedTaskId = null;
+    }, 4000);
+  }
+
+  function openCompletedTask() {
+    if (lastCompletedTaskId) {
+      openTask(lastCompletedTaskId);
+    }
+  }
+
+  async function undoComplete() {
+    if (!lastCompletedTaskId) return;
+
+    try {
+      const response = await fetch(`/task/${lastCompletedTaskId}/undo-complete`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        document.getElementById('toast').style.display = 'none';
+        if (toastTimeout) clearTimeout(toastTimeout);
+        lastCompletedTaskId = null;
+        window.location.reload();
+      } else {
+        alert('Failed to undo');
+      }
+    } catch (error) {
+      console.error('Error undoing complete:', error);
+      alert('Failed to undo');
+    }
+  }
+
+  // Track last deleted task for undo
+  let lastDeletedTaskId = null;
+  let deleteToastTimeout = null;
+
+  // Check for pending delete toast on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const pendingDeleteToast = localStorage.getItem('pendingDeleteToast');
+    if (pendingDeleteToast) {
+      const toastData = JSON.parse(pendingDeleteToast);
+      if (Date.now() - toastData.timestamp < 5000) {
+        lastDeletedTaskId = toastData.taskId;
+        showDeleteToast();
+      }
+      localStorage.removeItem('pendingDeleteToast');
+    }
+  });
+
+  async function quickDelete(taskId) {
+    try {
+      const response = await fetch(`/task/${taskId}/quick-delete`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem('pendingDeleteToast', JSON.stringify({
+          taskId: data.task_id,
+          timestamp: Date.now()
+        }));
+        window.location.reload();
+      } else {
+        alert('Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Error deleting task');
+    }
+  }
+
+  function showDeleteToast() {
+    const toast = document.getElementById('delete-toast');
+    toast.style.display = 'block';
+    if (deleteToastTimeout) clearTimeout(deleteToastTimeout);
+    deleteToastTimeout = setTimeout(() => {
+      toast.style.display = 'none';
+      lastDeletedTaskId = null;
+    }, 4000);
+  }
+
+  function openDeletedTask() {
+    if (lastDeletedTaskId) {
+      openTask(lastDeletedTaskId);
+    }
+  }
+
+  async function undoDelete() {
+    if (!lastDeletedTaskId) return;
+
+    try {
+      const response = await fetch(`/task/${lastDeletedTaskId}/undo-delete`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        document.getElementById('delete-toast').style.display = 'none';
+        if (deleteToastTimeout) clearTimeout(deleteToastTimeout);
+        lastDeletedTaskId = null;
+        window.location.reload();
+      } else {
+        alert('Failed to undo delete');
+      }
+    } catch (error) {
+      console.error('Error undoing delete:', error);
+      alert('Failed to undo delete');
+    }
+  }
+
+  async function addDependency(taskId) {
+    const select = document.getElementById('add-dep-select');
+    const dependsOnId = select.value;
+    if (!dependsOnId) return;
+
+    const formData = new FormData();
+    formData.append('depends_on_id', dependsOnId);
+
+    try {
+      const response = await fetch(`/task/${taskId}/add-dependency`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        window.location.reload();
+      } else {
+        alert(data.error || 'Failed to add dependency');
+      }
+    } catch (error) {
+      console.error('Error adding dependency:', error);
+      alert('Failed to add dependency');
+    }
+  }
+
+  async function removeDependency(taskId, dependsOnId) {
+    try {
+      const response = await fetch(`/task/${taskId}/remove-dependency/${dependsOnId}`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert('Failed to remove dependency');
+      }
+    } catch (error) {
+      console.error('Error removing dependency:', error);
+      alert('Failed to remove dependency');
+    }
+  }
+
+  // Recurring task options for edit modal
+  function toggleRecurringOptionsEdit() {
+    const checkbox = document.getElementById('edit-recurring-checkbox');
+    const options = document.getElementById('edit-recurring-options');
+    if (checkbox && options) {
+      options.style.display = checkbox.checked ? 'block' : 'none';
+    }
+  }
+
+  function toggleFrequencyOptionsEdit() {
+    const frequency = document.getElementById('edit-recurrence-frequency');
+    const weeklyOptions = document.getElementById('edit-weekly-options');
+    const monthlyOptions = document.getElementById('edit-monthly-options');
+    if (frequency) {
+      if (weeklyOptions) weeklyOptions.style.display = frequency.value === 'weekly' ? 'block' : 'none';
+      if (monthlyOptions) monthlyOptions.style.display = frequency.value === 'monthly' ? 'block' : 'none';
+    }
+  }
+
+  function toggleEndOptionsEdit() {
+    const endTypeRadio = document.querySelector('#edit-recurring-options input[name="recurrence_end_type"]:checked');
+    const countInput = document.getElementById('edit-end-count');
+    const dateInput = document.getElementById('edit-end-date');
+    if (endTypeRadio) {
+      const endType = endTypeRadio.value;
+      if (countInput) countInput.disabled = endType !== 'after';
+      if (dateInput) dateInput.disabled = endType !== 'on_date';
+    }
+  }
+
+  // Enable/disable fixed_time based on scheduled datetime (edit modal) - recurring is always enabled
+  function updateScheduleDependentOptionsEdit() {
+    const scheduledInput = document.getElementById('edit-scheduled-datetime');
+    const hasScheduled = scheduledInput && scheduledInput.value;
+
+    const fixedTimeCheckbox = document.getElementById('edit-fixed-time-checkbox');
+    const fixedTimeLabel = document.getElementById('edit-fixed-time-label');
+
+    if (fixedTimeCheckbox) {
+      fixedTimeCheckbox.disabled = !hasScheduled;
+      if (!hasScheduled) fixedTimeCheckbox.checked = false;
+    }
+    if (fixedTimeLabel) {
+      fixedTimeLabel.style.opacity = hasScheduled ? '1' : '0.5';
+    }
+  }
+
+  function loadDependenciesForEditModal(taskId) {
+    console.log('loadDependenciesForEditModal CALLED for task', taskId);
+
+    fetch(`/api/task/${taskId}/dependencies-data`)
+      .then(res => res.json())
+      .then(data => {
+        const modal = document.getElementById('task-modal');
+        const container = modal
+          ? modal.querySelector('#dependencies-view')
+          : null;
+
+        if (!container) {
+          console.warn('dependencies-view not found in task modal');
+          return;
+        }
+
+        const deps = data.tasks.filter(
+          t => t.is_dependency && !t.deleted && t.status !== 'Complete'
+        );
+
+        if (deps.length === 0) {
+          container.innerHTML = '<div class="view-field-value">None</div>';
+          return;
+        }
+
+        const ul = document.createElement('ul');
+        ul.className = 'dependency-list';
+        ul.style.maxHeight = '240px';
+        ul.style.overflowY = 'auto';
+
+        deps.forEach(task => {
+          const li = document.createElement('li');
+          li.onclick = () => openTask(task.id);
+          li.innerHTML = `
+            <span>${escapeHtml(task.title)}</span>
+            <span class="status-badge status-${task.status}">
+              ${task.status}
+            </span>
+          `;
+          ul.appendChild(li);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(ul);
+
+        console.log(
+          'loadDependenciesForEditModal DONE. Rendered deps:',
+          deps.map(d => d.id)
+        );
+      })
+      .catch(err => {
+        console.error('Failed to load dependencies for edit modal', err);
+      });
+  }
+
+
+
+  function closeEditDependenciesPopup() {
+    console.log('CLOSE EDIT DEPENDENCIES POPUP fired. currentEditTaskId =', currentEditTaskId);
+
+    document.getElementById('create-deps-overlay').style.display = 'none';
+    document.getElementById('create-deps-modal').style.display = 'none';
+
+    if (currentEditTaskId) {
+      loadDependenciesForEditModal(currentEditTaskId);
+    }
+  }
+
+
+
+  // Dependents popup
+  let currentDependentsTaskId = null;
+  let allTasksForDependents = [];
+
+  function loadDependentsForEditModal(taskId) {
+    fetch(`/api/task/${taskId}/dependents-data`)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('dependents-view');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        const dependents = data.tasks.filter(t => t.is_dependent);
+
+        if (dependents.length === 0) {
+          container.innerHTML = '<div class="view-field-value">None</div>';
+          return;
+        }
+
+        const ul = document.createElement('ul');
+        ul.className = 'dependency-list';
+        ul.style.maxHeight = '240px';
+        ul.style.overflowY = 'auto';
+
+        dependents.forEach(task => {
+          const li = document.createElement('li');
+          li.className = `dep-status-${task.status}`;
+          li.onclick = () => openTask(task.id);
+
+          li.innerHTML = `<span>${escapeHtml(task.title)}</span>`;
+
+          ul.appendChild(li);
+        });
+
+        container.appendChild(ul);
+      })
+      .catch(err => {
+        console.error('Failed to load dependents for edit modal', err);
+      });
+  }
+
+  let currentEditTaskId = null;
+
+  async function openEditDependenciesPopup(taskId) {
+    currentEditTaskId = taskId;
+    selectedCreateDeps.clear();
+
+    const response = await fetch(`/api/task/${taskId}/dependencies-data`);
+    const data = await response.json();
+
+    data.tasks.forEach(t => {
+      if (t.is_dependency) selectedCreateDeps.add(t.id);
+    });
+
+    allTasksForCreateDeps = data.tasks
+      .filter(t => !t.deleted && t.status !== 'Complete')
+      .sort((a, b) => {
+        // 1. selected dependencies first
+        if (a.is_dependency !== b.is_dependency) {
+          return a.is_dependency ? -1 : 1;
+        }
+
+        // 2. then blocked before free
+        if (a.status !== b.status) {
+          return a.status === 'Blocked' ? -1 : 1;
+        }
+
+        // 3. then alphabetical
+        return a.title.localeCompare(b.title);
+      });
+
+    renderCreateDepsList(allTasksForCreateDeps);
+
+
+    document.getElementById('create-deps-overlay').style.display = 'block';
+    document.getElementById('create-deps-modal').style.display = 'flex';
+  }
+
+
+
+  async function openDependentsPopup(taskId, taskTitle) {
+    currentDependentsTaskId = taskId;
+    document.getElementById('dependents-task-title').textContent = taskTitle;
+    document.getElementById('dependents-search').value = '';
+
+    try {
+      const response = await fetch(`/api/task/${taskId}/dependents-data`);
+      const data = await response.json();
+      allTasksForDependents = data.tasks;
+      renderDependentsList(allTasksForDependents);
+
+      document.getElementById('dependents-overlay').style.display = 'block';
+      document.getElementById('dependents-modal').style.display = 'flex';
+      document.getElementById('dependents-search').focus();
+    } catch (error) {
+      console.error('Error loading dependents:', error);
+      alert('Failed to load dependents');
+    }
+  }
+
+  function closeDependentsPopup() {
+    document.getElementById('dependents-overlay').style.display = 'none';
+    document.getElementById('dependents-modal').style.display = 'none';
+
+    if (currentDependentsTaskId) {
+      loadDependentsForEditModal(currentDependentsTaskId);
+    }
+
+    currentDependentsTaskId = null;
+  }
+
+
+  function filterDependentsList() {
+    const searchTerm = document.getElementById('dependents-search').value.toLowerCase();
+    const filtered = allTasksForDependents.filter(task =>
+      task.title.toLowerCase().includes(searchTerm)
+    );
+    renderDependentsList(filtered);
+  }
+
+  const TASK_SORT_ORDER = {
+  'Free': 1,
+  'Blocked': 2,
+  'Event': 3,
+  'Awaiting': 4,
+  'Recurring': 5,
+  'Goal': 6
+};
+
+function getTaskSortRank(task) {
+  return TASK_SORT_ORDER[task.status] || 99;
+}
+
+
+  function renderDependentsList(tasks) {
+    const list = document.getElementById('dependents-list');
+    const dependentTasks = tasks.filter(t => t.is_dependent);
+    const otherTasks = tasks
+      .filter(t => !t.is_dependent)
+      .sort((a, b) => getTaskSortRank(a) - getTaskSortRank(b));
+
+    let html = '';
+
+    if (dependentTasks.length > 0) {
+      html += '<li class="dependents-section-header">Currently Dependent</li>';
+      dependentTasks.forEach(task => {
+        html += renderDependentItem(task);
+      });
+    }
+
+    if (otherTasks.length > 0) {
+      html += '<li class="dependents-section-header">Other Tasks</li>';
+      otherTasks.forEach(task => {
+        html += renderDependentItem(task);
+      });
+    }
+
+    if (tasks.length === 0) {
+      html = '<li style="padding:20px; text-align:center; color:#888;">No tasks found</li>';
+    }
+
+    list.innerHTML = html;
+  }
+
+  function renderDependentItem(task) {
+    return `
+      <li class="${task.is_dependent ? 'is-dependent' : ''}"
+          onclick="toggleDependent(${task.id}, ${task.is_dependent})">
+        <div class="dependent-checkbox ${task.is_dependent ? 'checked' : ''}"></div>
+        <span class="dependent-task-title">${escapeHtml(task.title)}</span>
+        <span class="dependent-task-status status-${task.status}">
+          ${task.status}
+        </span>
+      </li>
+    `;
+
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  async function toggleDependent(dependentTaskId, currentlyDependent) {
+    if (!currentDependentsTaskId) return;
+
+    try {
+      let response;
+      if (currentlyDependent) {
+        // Remove: dependentTaskId no longer depends on currentDependentsTaskId
+        response = await fetch(`/task/${dependentTaskId}/remove-dependency/${currentDependentsTaskId}`, {
+          method: 'POST'
+        });
+      } else {
+        // Add: dependentTaskId now depends on currentDependentsTaskId
+        const formData = new FormData();
+        formData.append('depends_on_id', currentDependentsTaskId);
+        response = await fetch(`/task/${dependentTaskId}/add-dependency`, {
+          method: 'POST',
+          body: formData
+        });
+      }
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        // Update local state and re-render
+        const taskIndex = allTasksForDependents.findIndex(t => t.id === dependentTaskId);
+        if (taskIndex !== -1) {
+          allTasksForDependents[taskIndex].is_dependent = !currentlyDependent;
+        }
+        filterDependentsList();
+      } else {
+        alert(data.error || 'Failed to update dependency');
+      }
+    } catch (error) {
+      console.error('Error toggling dependent:', error);
+      alert('Failed to update dependency');
+    }
+  }
+
+  // Create task dependencies popup
+  let allTasksForCreateDeps = [];
+  let selectedCreateDeps = new Set();
+
+  async function openCreateDependenciesPopup() {
+    document.getElementById('create-deps-search').value = '';
+
+    try {
+      const response = await fetch('/api/tasks/incomplete');
+      const data = await response.json();
+      allTasksForCreateDeps = data.tasks;
+      renderCreateDepsList(allTasksForCreateDeps);
+
+      document.getElementById('create-deps-overlay').style.display = 'block';
+      document.getElementById('create-deps-modal').style.display = 'flex';
+      document.getElementById('create-deps-search').focus();
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      alert('Failed to load tasks');
+    }
+  }
+
+  function closeCreateDependenciesPopup() {
+    console.log('CLOSE DEPENDENCIES POPUP fired. currentEditTaskId =', currentEditTaskId);
+
+    document.getElementById('create-deps-overlay').style.display = 'none';
+    document.getElementById('create-deps-modal').style.display = 'none';
+
+    if (currentEditTaskId) {
+      loadDependenciesForEditModal(currentEditTaskId);
+      currentEditTaskId = null;
+    }
+
+    // Always update the create deps display (for create task modal)
+    updateCreateDepsDisplay();
+  }
+
+
+
+  function filterCreateDepsList() {
+    const searchTerm = document.getElementById('create-deps-search').value.toLowerCase();
+    const filtered = allTasksForCreateDeps.filter(task =>
+      task.title.toLowerCase().includes(searchTerm)
+    );
+    renderCreateDepsList(filtered);
+  }
+
+  function renderCreateDepsList(tasks) {
+    const list = document.getElementById('create-deps-list');
+    const selectedTasks = tasks.filter(t => selectedCreateDeps.has(t.id));
+    const otherTasks = tasks
+      .filter(t => !selectedCreateDeps.has(t.id))
+      .sort((a, b) => getTaskSortRank(a) - getTaskSortRank(b));
+
+    let html = '';
+
+    if (selectedTasks.length > 0) {
+      html += '<li class="dependents-section-header">Selected Dependencies</li>';
+      selectedTasks.forEach(task => {
+        html += renderCreateDepItem(task, true);
+      });
+    }
+
+    if (otherTasks.length > 0) {
+      html += '<li class="dependents-section-header">Other Tasks</li>';
+      otherTasks.forEach(task => {
+        html += renderCreateDepItem(task, false);
+      });
+    }
+
+    if (tasks.length === 0) {
+      html = '<li style="padding:20px; text-align:center; color:#888;">No tasks found</li>';
+    }
+
+    list.innerHTML = html;
+  }
+
+  function renderCreateDepItem(task, isSelected) {
+    return `
+      <li class="${isSelected ? 'is-dependent' : ''}" onclick="toggleCreateDep(${task.id})">
+        <div class="dependent-checkbox ${isSelected ? 'checked' : ''}"></div>
+        <span class="dependent-task-title">${escapeHtml(task.title)}</span>
+        <span class="dependent-task-status status-${task.status}">${task.status}</span>
+      </li>
+    `;
+  }
+
+  async function toggleCreateDep(dependsOnId) {
+    const isSelected = selectedCreateDeps.has(dependsOnId);
+
+    // If editing an existing task, make API calls
+    if (currentEditTaskId) {
+      try {
+        let response;
+
+        if (isSelected) {
+          response = await fetch(
+            `/task/${currentEditTaskId}/remove-dependency/${dependsOnId}`,
+            { method: 'POST' }
+          );
+          selectedCreateDeps.delete(dependsOnId);
+        } else {
+          const formData = new FormData();
+          formData.append('depends_on_id', dependsOnId);
+
+          response = await fetch(
+            `/task/${currentEditTaskId}/add-dependency`,
+            { method: 'POST', body: formData }
+          );
+          selectedCreateDeps.add(dependsOnId);
+        }
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          alert(data.error || 'Failed to update dependency');
+          return;
+        }
+
+        filterCreateDepsList();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to update dependency');
+      }
+    } else {
+      // Creating a new task - just toggle the selection locally
+      if (isSelected) {
+        selectedCreateDeps.delete(dependsOnId);
+      } else {
+        selectedCreateDeps.add(dependsOnId);
+      }
+      filterCreateDepsList();
+    }
+  }
+
+
+  function updateCreateDepsDisplay() {
+    // Update the container with selected dependencies or "None"
+    const container = document.getElementById('create-deps-container');
+    container.innerHTML = '';
+
+    if (selectedCreateDeps.size === 0) {
+      container.innerHTML = '<div class="view-field-value">None</div>';
+      updateCreateTaskStatusAndGoals();
+      return;
+    }
+
+    // Create a list of selected dependencies
+    const ul = document.createElement('ul');
+    ul.className = 'dependency-list';
+    ul.style.maxHeight = '120px';
+    ul.style.overflowY = 'auto';
+
+    selectedCreateDeps.forEach(id => {
+      // Find task info from allTasksForCreateDeps
+      const task = allTasksForCreateDeps.find(t => t.id === id);
+      if (task) {
+        const li = document.createElement('li');
+        li.className = `dep-status-${task.status}`;
+        li.innerHTML = `<span>${escapeHtml(task.title)}</span>`;
+        ul.appendChild(li);
+      }
+
+      // Add hidden input for form submission
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'dependency_ids';
+      input.value = id;
+      container.appendChild(input);
+    });
+
+    container.insertBefore(ul, container.firstChild);
+    updateCreateTaskStatusAndGoals();
+  }
+
+  // Create task dependents popup
+  let allTasksForCreateDependents = [];
+  let selectedCreateDependents = new Set();
+
+  async function openCreateDependentsPopup() {
+    document.getElementById('create-dependents-search').value = '';
+
+    try {
+      const response = await fetch('/api/tasks/incomplete');
+      const data = await response.json();
+      allTasksForCreateDependents = data.tasks;
+      renderCreateDependentsList(allTasksForCreateDependents);
+
+      document.getElementById('create-dependents-overlay').style.display = 'block';
+      document.getElementById('create-dependents-modal').style.display = 'flex';
+      document.getElementById('create-dependents-search').focus();
+    } catch (error) {
+      console.error('Failed to load tasks for dependents:', error);
+    }
+  }
+
+  function closeCreateDependentsPopup() {
+    document.getElementById('create-dependents-overlay').style.display = 'none';
+    document.getElementById('create-dependents-modal').style.display = 'none';
+    updateCreateDependentsDisplay();
+  }
+
+  function filterCreateDependentsList() {
+    const query = document.getElementById('create-dependents-search').value.toLowerCase();
+    const filtered = allTasksForCreateDependents.filter(t =>
+      t.title.toLowerCase().includes(query)
+    );
+    renderCreateDependentsList(filtered);
+  }
+
+  function renderCreateDependentsList(tasks) {
+    const list = document.getElementById('create-dependents-list');
+    const selectedTasks = tasks.filter(t => selectedCreateDependents.has(t.id));
+    const otherTasks = tasks
+      .filter(t => !selectedCreateDependents.has(t.id))
+      .sort((a, b) => getTaskSortRank(a) - getTaskSortRank(b));
+
+    let html = '';
+
+    if (selectedTasks.length > 0) {
+      html += '<li class="dependents-section-header">Selected Dependents</li>';
+      selectedTasks.forEach(task => {
+        html += `
+          <li class="is-dependent" onclick="toggleCreateDependent(${task.id})">
+            <div class="dependent-checkbox checked"></div>
+            <span class="dependent-task-title">${escapeHtml(task.title)}</span>
+            <span class="dependent-task-status status-${task.status}">${task.status}</span>
+          </li>
+        `;
+      });
+    }
+
+    if (otherTasks.length > 0) {
+      html += '<li class="dependents-section-header">Other Tasks</li>';
+      otherTasks.forEach(task => {
+        html += `
+          <li onclick="toggleCreateDependent(${task.id})">
+            <div class="dependent-checkbox"></div>
+            <span class="dependent-task-title">${escapeHtml(task.title)}</span>
+            <span class="dependent-task-status status-${task.status}">${task.status}</span>
+          </li>
+        `;
+      });
+    }
+
+    if (tasks.length === 0) {
+      html = '<li style="padding:20px; text-align:center; color:#888;">No tasks found</li>';
+    }
+
+    list.innerHTML = html;
+  }
+
+  function toggleCreateDependent(taskId) {
+    if (selectedCreateDependents.has(taskId)) {
+      selectedCreateDependents.delete(taskId);
+    } else {
+      selectedCreateDependents.add(taskId);
+    }
+    renderCreateDependentsList(allTasksForCreateDependents.filter(t =>
+      t.title.toLowerCase().includes(document.getElementById('create-dependents-search').value.toLowerCase())
+    ));
+  }
+
+  function updateCreateDependentsDisplay() {
+    const container = document.getElementById('create-dependents-container');
+    container.innerHTML = '';
+
+    if (selectedCreateDependents.size === 0) {
+      container.innerHTML = '<div class="view-field-value">None</div>';
+      updateCreateTaskStatusAndGoals();
+      return;
+    }
+
+    const ul = document.createElement('ul');
+    ul.className = 'dependency-list';
+    ul.style.maxHeight = '120px';
+    ul.style.overflowY = 'auto';
+
+    selectedCreateDependents.forEach(id => {
+      const task = allTasksForCreateDependents.find(t => t.id === id);
+      if (task) {
+        const li = document.createElement('li');
+        li.className = `dep-status-${task.status}`;
+        li.innerHTML = `<span>${escapeHtml(task.title)}</span>`;
+        ul.appendChild(li);
+      }
+
+      // Add hidden input for form submission
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'dependent_ids';
+      input.value = id;
+      container.appendChild(input);
+    });
+
+    container.insertBefore(ul, container.firstChild);
+    updateCreateTaskStatusAndGoals();
+  }
+
+  // Update status and goals based on selected dependencies and dependents
+  function updateCreateTaskStatusAndGoals() {
+    const statusContainer = document.getElementById('create-task-status');
+    const goalsContainer = document.getElementById('create-task-goals');
+
+    // Determine status based on dependencies and checkboxes
+    let status = 'Free';
+
+    // Check if any dependency is Awaiting or Blocked (has Awaiting in chain)
+    // A task is only Blocked if it depends on an Awaiting task
+    let hasAwaitingInChain = false;
+    selectedCreateDeps.forEach(id => {
+      const task = allTasksForCreateDeps.find(t => t.id === id);
+      if (task && (task.status === 'Awaiting' || task.status === 'Blocked')) {
+        hasAwaitingInChain = true;
+      }
+    });
+
+    if (hasAwaitingInChain) {
+      status = 'Blocked';
+    }
+
+    // Check checkboxes - these override dependency-based status
+    const isGoal = document.querySelector('#create-task-form input[name="unknown_dependencies"]')?.checked;
+    const isAwaiting = document.querySelector('#create-task-form input[name="awaiting"]')?.checked;
+    const isRecurring = document.getElementById('create-recurring-checkbox')?.checked;
+    const isEvent = document.getElementById('create-fixed-time-checkbox')?.checked;
+
+    if (isGoal) {
+      status = 'Goal';
+    } else if (isAwaiting) {
+      status = 'Awaiting';
+    } else if (isRecurring) {
+      status = 'Recurring';
+    } else if (isEvent) {
+      status = 'Event';
+    }
+
+    // Update status display
+    statusContainer.innerHTML = `<span class="status-badge status-${status}">${status}</span>`;
+
+    // Find goals from dependents (tasks that depend on this new task that are goals)
+    const goals = [];
+    selectedCreateDependents.forEach(id => {
+      const task = allTasksForCreateDependents.find(t => t.id === id);
+      if (task && task.status === 'Goal') {
+        goals.push(task);
+      }
+    });
+
+    // Update goals display
+    if (goals.length > 0) {
+      goalsContainer.innerHTML = goals.map(g =>
+        `<span class="label-goal">${escapeHtml(g.title)}</span>`
+      ).join(' ');
+    } else {
+      goalsContainer.innerHTML = '<span style="color:#999; font-size:12px;">None</span>';
+    }
+  }
+
+  // Reset create deps and dependents when modal opens
+  const originalOpenModal = openModal;
+  function openModal() {
+    currentEditTaskId = null;  // Ensure we're in "create" mode, not "edit" mode
+    selectedCreateDeps.clear();
+    selectedCreateDependents.clear();
+    updateCreateDepsDisplay();
+    updateCreateDependentsDisplay();
+    updateCreateTaskStatusAndGoals();
+    document.getElementById('redirect-view-input').value = currentView;
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('modal').style.display = 'block';
+  }
+
+  function viewTaskOnGraph(taskId) {
+    // Close task modal
+    closeModal();
+
+    // Switch to flowchart view
+    showView('flowchart');
+
+    // Wait for flowchart to load, then center on the task
+    const waitForFlowchart = setInterval(() => {
+      if (!flowchartNodes || flowchartNodes.length === 0) return;
+
+      clearInterval(waitForFlowchart);
+
+      // Find the node with this taskId
+      const node = flowchartNodes.find(n => n.id === taskId);
+      if (node && flowchartSvg && flowchartZoom) {
+        // Calculate transform to center on this node
+        const container = document.getElementById('flowchart-container');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        const scale = 1;
+        const x = width / 2 - node.x * scale;
+        const y = height / 2 - node.y * scale;
+
+        flowchartSvg.transition()
+          .duration(500)
+          .call(flowchartZoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+
+        // Highlight the node briefly
+        flowchartG.selectAll('g.node')
+          .filter(d => d.id === taskId)
+          .select('rect')
+          .attr('stroke', '#ff9800')
+          .attr('stroke-width', 4)
+          .transition()
+          .duration(2000)
+          .attr('stroke', d => d3.color(STATUS_COLORS[d.status] || '#999').darker(0.3).toString())
+          .attr('stroke-width', 2);
+      }
+    }, 50);
+  }
+
+</script>
+
+</body>
+</html>

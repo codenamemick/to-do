@@ -1,0 +1,552 @@
+<style>
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0.3px;
+    }
+    .status-Free { background: #e3f2fd; color: #2196f3; }
+    .status-Blocked { background: #ffebee; color: #c62828; }
+    .status-Awaiting { background: #eeeeee; color: #757575; }
+    .status-Event { background: #fff3e0; color: #da8f1f; }
+    .status-Goal { background: #f3e5f5; color: #9300ef; }
+    .status-Recurring { background: #e0f2f1; color: #00897b; }
+    .status-Complete { background: #e8f5e9; color: #4caf50; }
+
+    /* Two-column modal layout */
+    .modal-two-column {
+      display: flex;
+      gap: 0;
+    }
+    .modal-main-column {
+      flex: 1;
+      padding-right: 20px;
+
+    }
+    .modal-side-column {
+      width: 200px;
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Side column field styling */
+    .side-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .side-field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #555555;
+      text-transform: none;
+      letter-spacing: 0.3px;
+    }
+    .side-field-value {
+      font-size: 13px;
+      color: #1a1a1a;
+    }
+    .side-field input[type="datetime-local"],
+    .side-field input[type="number"] {
+      padding: 6px 8px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      width: 80%;
+      box-sizing: border-box;
+    }
+    .side-field input:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+
+    .relationship-list {
+    max-height: 480px;
+    overflow-y: auto;
+    }
+
+
+    /* Goal badge styling (same as kanban) */
+    .label-goal {
+      display: inline-block;
+      background: #f3e5f5;
+      color: #9300ef;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    /* Compact view field */
+    .view-field {
+      margin-bottom: 8px;
+    }
+    .view-field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #505050;
+      text-transform: none;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+    }
+    .view-field-value {
+      padding: 6px 10px;
+      background: #f5f7f9;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1a1a1a;
+      min-height: 14px;
+    }
+
+    .edit-link {
+        color: #2196f3;
+        cursor: pointer;
+    }
+
+    .dependency-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .dependency-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: #f5f7f9;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: background 0.15s, filter 0.15s;
+      font-size: 13px;
+    }
+    .dependency-list li:hover {
+      filter: brightness(0.95);
+    }
+    /* Status-based colors for dependency list items */
+    .dependency-list li.dep-status-Free { background: #e3f2fd; color: #1565c0; }
+    .dependency-list li.dep-status-Blocked { background: #ffebee; color: #c62828; }
+    .dependency-list li.dep-status-Awaiting { background: #eeeeee; color: #616161; }
+    .dependency-list li.dep-status-Event { background: #fff3e0; color: #e65100; }
+    .dependency-list li.dep-status-Goal { background: #f3e5f5; color: #7b1fa2; }
+    .dependency-list li.dep-status-Recurring { background: #e0f2f1; color: #00695c; }
+    .dependency-list li.dep-status-Complete { background: #e8f5e9; color: #2e7d32; }
+
+    /* Compact buttons */
+    .modal-btn {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .modal-btn-primary { background: #2196f3; color: white; }
+    .modal-btn-primary:hover { background: #1976d2; }
+    .modal-btn-secondary { background: #f0f0f0; color: #333; }
+    .modal-btn-secondary:hover { background: #e0e0e0; }
+    .modal-btn-success { background: #4caf50; color: white; }
+    .modal-btn-success:hover { background: #43a047; }
+    .modal-btn-danger { background: #ff5252; color: white; }
+    .modal-btn-danger:hover { background: #e53935; }
+    .modal-btn:disabled { background: #e0e0e0; color: #999; cursor: not-allowed; }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+    }
+
+    /* Compact edit form */
+    .edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .edit-form label {
+      display: flex;
+      margin-top: 10px;
+      flex-direction: column;
+      font-size: 12px;
+      font-weight: 600;
+      color: #505050;
+      text-transform: none;
+      letter-spacing: 0.3px;
+      gap: 3px;
+    }
+    .edit-form input[type="text"],
+    .edit-form input[type="number"],
+    .edit-form input[type="datetime-local"],
+    .edit-form input[type="date"],
+    .edit-form input:not([type]),
+    .edit-form textarea,
+    .edit-form select {
+      padding: 8px 10px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fafafa;
+      color: #1a1a1a;
+      text-transform: none;
+      font-weight: 400;
+      letter-spacing: normal;
+    }
+    .edit-form input:focus,
+    .edit-form textarea:focus,
+    .edit-form select:focus {
+      outline: none;
+      border-color: #2196f3;
+      background: #fff;
+    }
+    .edit-form textarea {
+      resize: vertical;
+      min-height: 50px;
+    }
+
+    .checkbox-label {
+      flex-direction: row !important;
+      align-items: center;
+      gap: 8px !important;
+      text-transform: none !important;
+      font-weight: 400 !important;
+      color: #333 !important;
+      font-size: 13px !important;
+      cursor: pointer;
+    }
+    .checkbox-label input[type="checkbox"],
+    .checkbox-label input[type="radio"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #2196f3;
+      cursor: pointer;
+    }
+
+    /* Compact recurring panel */
+    .recurring-panel {
+      background: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .recurring-panel label {
+      text-transform: none;
+      font-weight: 500;
+      color: #555;
+      letter-spacing: normal;
+      font-size: 12px;
+    }
+
+    /* Side column checkbox styling - label fully left, checkbox aligned in column left of center */
+    .side-checkbox {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      font-size: 12px !important;
+      color: #555555 !important;
+      cursor: pointer;
+      gap: 6px !important;
+      padding-right: 150px !important;
+    }
+
+    .side-checkbox input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #2196f3;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    /* Compact checkbox styling for top-right section */
+    .side-checkbox-compact {
+      display: grid !important;
+      grid-template-columns: 1fr 16px; /* text | checkbox */
+      align-items: center !important;
+      font-size: 12px !important;
+      color: #555555 !important;
+      cursor: pointer;
+      gap: 13px !important;
+    }
+
+    .side-checkbox-compact input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #2196f3;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+</style>
+
+<!-- Edit Form -->
+<div id="edit">
+    <form method="POST" action="/update-task/{{ task.id }}" class="edit-form">
+        <div class="modal-two-column">
+            <!-- Main Column (left) -->
+            <div class="modal-main-column">
+                <!-- Title -->
+                <label>
+                    Title
+                    <input name="title" value="{{ task.title }}" required>
+                </label>
+
+                <!-- Description -->
+                <label class="view-field-label">
+                    Description
+                    <textarea name="description" style="min-height:60px;">{{ task.description or '' }}</textarea>
+                </label>
+
+                <!-- Relationships -->
+                <div style="margin-top:12px;">
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px;">
+
+                        <!-- Direct Dependencies -->
+                        <div>
+                            <div class="view-field-label"
+                                style="text-align:center; display:flex; justify-content:center; gap:8px; align-items:center;">
+                                <span>⬅️ Dependencies</span>
+                                <span class="edit-link"
+                                    onclick="openEditDependenciesPopup({{ task.id }})">
+                                    (Edit)
+                                </span>
+                            </div>
+
+                            <div id="dependencies-view">
+                                {% set active_deps = task.dependencies
+                                    |selectattr('depends_on_task.deleted', 'equalto', false)
+                                    |selectattr('depends_on_task.status', 'ne', 'Complete')
+                                    |list %}
+
+                                {% if active_deps|length > 0 %}
+                                    <ul class="dependency-list relationship-list" style="overflow-y:auto;">
+                                        {% for dep in active_deps %}
+                                        <li class="dep-status-{{ dep.depends_on_task.status }}" onclick="openTask({{ dep.depends_on_task.id }})">
+                                            <span>{{ dep.depends_on_task.title }}</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <div class="view-field-value">None</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Direct Dependents -->
+                        <div>
+                            <div class="view-field-label relationship-list"
+                                style="text-align:center; display:flex; justify-content:center; gap:8px; align-items:center;">
+                                <span>Dependents</span>
+                                <span class="edit-link"
+                                    onclick="openDependentsPopup({{ task.id }}, '{{ task.title|e }}')">
+                                    (Edit) ➡️
+                                </span>
+                            </div>
+
+                            <div id="dependents-view">
+                                <div class="view-field-value">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% set has_relationships = task.dependencies|length > 0 or task.get_downstream_count() > 0 %}
+
+                    {% if has_relationships %}
+                    <div style="display:flex; justify-content:center; margin-top:12px;">
+                        <button
+                            type="button"
+                            class="modal-btn modal-btn-secondary"
+                            onclick="viewTaskOnGraph({{ task.id }})"
+                        >
+                            View on flowchart
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Side Column (right) -->
+            <div class="modal-side-column">
+
+                <!-- Top row: Goal/Status on left, checkboxes on right -->
+                <div style="display:flex; gap:16px;">
+                    <!-- Left: Goal and Status -->
+                    <div style="flex:1; display:flex; flex-direction:column; gap:12px;">
+                        <!-- Goal(s) -->
+                        <div class="side-field">
+                            <div class="side-field-label">Goals</div>
+                            <div class="side-field-value">
+                                {% set downstream_goals = task.get_downstream_goals() %}
+                                {% if downstream_goals|length > 0 %}
+                                    {% for goal in downstream_goals %}
+                                        <span class="label-goal">{{ goal.title }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span style="color:#999; font-size:12px;">None</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="view-field">
+                            <div class="view-field-label">Status</div>
+                            <div class="view-field-value" style="background:transparent; padding:4px 0;">
+                                <span class="status-badge status-{{ task.status }}">{{ task.status }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Checkboxes -->
+                    <div style="display:flex; flex-direction:column; gap:8px; padding-top:4px;">
+                        <!-- Fixed time / Event -->
+                        <label class="side-checkbox-compact" id="edit-fixed-time-label">
+                            <span>Event</span>
+                            <input type="checkbox" name="fixed_time" id="edit-fixed-time-checkbox" {% if task.fixed_time %}checked{% endif %}>
+                        </label>
+
+                        <!-- Recurring -->
+                        <label class="side-checkbox-compact" id="edit-recurring-label">
+                            <span>Recurring</span>
+                            <input type="checkbox" name="recurring" id="edit-recurring-checkbox" {% if task.recurring %}checked{% endif %} onchange="toggleRecurringOptionsEdit()">
+                        </label>
+
+                        <!-- Delegated -->
+                        <label class="side-checkbox-compact">
+                            <span>Delegated</span>
+                            <input type="checkbox" name="awaiting" {% if task.awaiting %}checked{% endif %}>
+                        </label>
+
+                        <!-- Mark as Goal -->
+                        <label class="side-checkbox-compact">
+                            <span>Goal</span>
+                            <input type="checkbox" name="unknown_dependencies" {% if task.unknown_dependencies %}checked{% endif %}>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Recurring Options (shows when recurring is checked) -->
+                <div id="edit-recurring-options" class="recurring-panel" style="display:{{ 'block' if task.recurring else 'none' }};">
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <span>Every</span>
+                        <input type="number" name="recurrence_interval" value="{{ task.recurrence_interval or 1 }}" min="1" style="width:40px; padding:3px 5px; font-size:12px;">
+                        <select name="recurrence_frequency" id="edit-recurrence-frequency" onchange="toggleFrequencyOptionsEdit()" style="padding:3px 5px; font-size:12px;">
+                            <option value="daily" {% if task.recurrence_frequency == 'daily' %}selected{% endif %}>Day(s)</option>
+                            <option value="weekly" {% if task.recurrence_frequency == 'weekly' %}selected{% endif %}>Week(s)</option>
+                            <option value="monthly" {% if task.recurrence_frequency == 'monthly' %}selected{% endif %}>Month(s)</option>
+                            <option value="yearly" {% if task.recurrence_frequency == 'yearly' %}selected{% endif %}>Year(s)</option>
+                        </select>
+                    </div>
+
+                    <!-- Weekly options -->
+                    <div id="edit-weekly-options" style="display:{{ 'flex' if task.recurrence_frequency == 'weekly' else 'none' }}; gap:4px; margin-top:6px; flex-wrap:wrap;">
+                        {% set days = (task.recurrence_days or '').split(',') %}
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_0" value="0" {% if '0' in days %}checked{% endif %} style="width:12px;height:12px;"> M</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_1" value="1" {% if '1' in days %}checked{% endif %} style="width:12px;height:12px;"> T</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_2" value="2" {% if '2' in days %}checked{% endif %} style="width:12px;height:12px;"> W</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_3" value="3" {% if '3' in days %}checked{% endif %} style="width:12px;height:12px;"> T</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_4" value="4" {% if '4' in days %}checked{% endif %} style="width:12px;height:12px;"> F</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_5" value="5" {% if '5' in days %}checked{% endif %} style="width:12px;height:12px;"> S</label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_6" value="6" {% if '6' in days %}checked{% endif %} style="width:12px;height:12px;"> S</label>
+                    </div>
+
+                    <!-- Monthly options -->
+                    <div id="edit-monthly-options" style="display:{{ 'flex' if task.recurrence_frequency == 'monthly' else 'none' }}; flex-direction:column; gap:4px; margin-top:6px;">
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                            <input type="radio" name="recurrence_month_type" value="day_of_month" {% if task.recurrence_month_type != 'day_of_week' %}checked{% endif %} style="width:12px;height:12px;"> Same day
+                        </label>
+                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                            <input type="radio" name="recurrence_month_type" value="day_of_week" {% if task.recurrence_month_type == 'day_of_week' %}checked{% endif %} style="width:12px;height:12px;"> Same weekday
+                        </label>
+                    </div>
+
+                    <!-- End options -->
+                    <div style="margin-top:6px; font-size:11px;">
+                        <div style="margin-bottom:4px;">Ends:</div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                                <input type="radio" name="recurrence_end_type" value="never" {% if task.recurrence_end_type not in ('after', 'on_date') %}checked{% endif %} onchange="toggleEndOptionsEdit()" style="width:12px;height:12px;"> Never
+                            </label>
+                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                                <input type="radio" name="recurrence_end_type" value="after" {% if task.recurrence_end_type == 'after' %}checked{% endif %} onchange="toggleEndOptionsEdit()" style="width:12px;height:12px;"> After
+                                <input type="number" name="recurrence_end_count" id="edit-end-count" value="{{ task.recurrence_end_count or 10 }}" min="1" style="width:35px; padding:2px 4px; font-size:11px;" {% if task.recurrence_end_type != 'after' %}disabled{% endif %}>
+                            </label>
+                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
+                                <input type="radio" name="recurrence_end_type" value="on_date" {% if task.recurrence_end_type == 'on_date' %}checked{% endif %} onchange="toggleEndOptionsEdit()" style="width:12px;height:12px;"> Until
+                            </label>
+                            <input type="date" name="recurrence_end_date" id="edit-end-date" value="{{ task.recurrence_end_date.isoformat() if task.recurrence_end_date else '' }}" style="padding:2px 4px; font-size:11px; width:100%; box-sizing:border-box;" {% if task.recurrence_end_type != 'on_date' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule -->
+                <div class="side-field">
+                    <div class="side-field-label">Schedule</div>
+                    <input type="datetime-local"
+                        name="scheduled_datetime"
+                        id="edit-scheduled-datetime"
+                        value="{{ task.scheduled_datetime.strftime('%Y-%m-%dT%H:%M') if task.scheduled_datetime else '' }}"
+                        onchange="updateScheduleDependentOptionsEdit()">
+                </div>
+
+                <!-- Due date -->
+                <div class="side-field">
+                    <div class="side-field-label">Due</div>
+                    <input type="datetime-local"
+                        name="deadline"
+                        value="{{ task.deadline.strftime('%Y-%m-%dT%H:%M') if task.deadline else '' }}">
+                </div>
+
+                <!-- Duration -->
+                <div class="side-field">
+                    <div class="side-field-label">Duration (hours)</div>
+                    <input type="number" name="estimated_duration" step="0.5"
+                        value="{{ task.estimated_duration if task.estimated_duration else '' }}">
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit form buttons -->
+        <div class="button-row">
+            <button type="submit" class="modal-btn modal-btn-primary">
+                Save
+            </button>
+
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()">
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="modal-btn modal-btn-success"
+                onclick="quickComplete({{ task.id }})"
+                {% if task.status == 'Complete' %}disabled{% endif %}>
+                Complete
+            </button>
+
+            <button
+                type="button"
+                class="modal-btn modal-btn-danger"
+                onclick="quickDelete({{ task.id }})">
+                Delete
+            </button>
+        </div>
+    </form>
+</div>

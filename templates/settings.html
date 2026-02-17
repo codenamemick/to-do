@@ -1,0 +1,552 @@
+<!doctype html>
+<html>
+<head>
+  <title>Settings - PM Tool</title>
+
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1a1a1a;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .header h1 {
+      margin: 0;
+    }
+    .back-link {
+      color: #2196f3;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 18px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="number"] {
+      width: 100%;
+      max-width: 300px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .weekday-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .weekday-item {
+      text-align: center;
+    }
+    .weekday-item label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .weekday-item input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .btn-primary {
+      background: #2196f3;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: #1976d2;
+    }
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    /* Calendar styles */
+    .capacity-calendar {
+      margin-top: 16px;
+    }
+    .calendar-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .calendar-nav button {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .calendar-nav button:hover {
+      background: #f5f5f5;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .calendar-header {
+      text-align: center;
+      font-weight: 600;
+      padding: 8px;
+      font-size: 12px;
+      color: #666;
+    }
+    .calendar-day {
+      aspect-ratio: 1;
+      min-height: 60px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 4px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      background: #fff;
+    }
+    .calendar-day:hover {
+      border-color: #2196f3;
+    }
+    .calendar-day.other-month {
+      background: #f9f9f9;
+      color: #999;
+    }
+    .calendar-day.today {
+      border-color: #2196f3;
+      border-width: 2px;
+    }
+    .calendar-day.has-override {
+      background: #e3f2fd;
+    }
+    .calendar-day .day-number {
+      font-weight: 600;
+    }
+    .calendar-day .day-hours {
+      margin-top: auto;
+      color: #666;
+      font-size: 11px;
+    }
+    .calendar-day.has-override .day-hours {
+      color: #1565c0;
+      font-weight: 600;
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.3);
+      z-index: 999;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      z-index: 1000;
+      min-width: 300px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .modal h3 {
+      margin-top: 0;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    .success-message {
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Settings</h1>
+    <a href="/" class="back-link">&larr; Back to Tasks</a>
+  </div>
+
+  <div id="success-message" class="success-message">Settings saved successfully!</div>
+
+  <!-- Owner Name -->
+  <div class="card">
+    <h2>Profile</h2>
+    <form id="profile-form">
+      <div class="form-group">
+        <label for="owner_name">Your Name</label>
+        <input type="text" id="owner_name" name="owner_name" value="{{ settings.owner_name if settings else '' }}" placeholder="Enter your name">
+      </div>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </div>
+
+  <!-- Weekly Defaults -->
+  <div class="card">
+    <h2>Default Weekly Availability</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
+      Set your default available hours for each day of the week.
+    </p>
+    <form id="weekday-form">
+      <div class="weekday-grid">
+        <div class="weekday-item">
+          <label>Mon</label>
+          <input type="number" name="hours_monday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_monday if settings else 7.0 }}">
+        </div>
+        <div class="weekday-item">
+          <label>Tue</label>
+          <input type="number" name="hours_tuesday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_tuesday if settings else 7.0 }}">
+        </div>
+        <div class="weekday-item">
+          <label>Wed</label>
+          <input type="number" name="hours_wednesday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_wednesday if settings else 7.0 }}">
+        </div>
+        <div class="weekday-item">
+          <label>Thu</label>
+          <input type="number" name="hours_thursday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_thursday if settings else 7.0 }}">
+        </div>
+        <div class="weekday-item">
+          <label>Fri</label>
+          <input type="number" name="hours_friday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_friday if settings else 7.0 }}">
+        </div>
+        <div class="weekday-item">
+          <label>Sat</label>
+          <input type="number" name="hours_saturday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_saturday if settings else 0.0 }}">
+        </div>
+        <div class="weekday-item">
+          <label>Sun</label>
+          <input type="number" name="hours_sunday" step="0.5" min="0" max="24"
+                 value="{{ settings.hours_sunday if settings else 0.0 }}">
+        </div>
+      </div>
+      <div style="margin-top: 16px;">
+        <button type="submit" class="btn btn-primary">Save Defaults</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Daily Overrides Calendar -->
+  <div class="card">
+    <h2>Daily Availability Overrides</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
+      Click on any day to set a custom availability for that specific date (e.g., holidays, time off).
+    </p>
+    <div class="capacity-calendar">
+      <div class="calendar-nav">
+        <button onclick="changeMonth(-1)">&larr; Previous</button>
+        <span id="calendar-month-label" style="font-weight: 600;"></span>
+        <button onclick="changeMonth(1)">Next &rarr;</button>
+      </div>
+      <div class="calendar-grid">
+        <div class="calendar-header">Mon</div>
+        <div class="calendar-header">Tue</div>
+        <div class="calendar-header">Wed</div>
+        <div class="calendar-header">Thu</div>
+        <div class="calendar-header">Fri</div>
+        <div class="calendar-header">Sat</div>
+        <div class="calendar-header">Sun</div>
+      </div>
+      <div class="calendar-grid" id="calendar-days"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Day Override Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+<div class="modal" id="day-modal">
+  <h3 id="modal-date-label">Edit Availability</h3>
+  <div class="form-group">
+    <label for="override-hours">Hours available</label>
+    <input type="number" id="override-hours" step="0.5" min="0" max="24" style="width: 100%;">
+  </div>
+  <p style="font-size: 12px; color: #666;" id="modal-default-hint"></p>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" id="btn-reset-default" onclick="resetToDefault()">Reset to Default</button>
+    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveOverride()">Save</button>
+  </div>
+</div>
+
+<script>
+  // Weekday defaults from server
+  const weekdayDefaults = {
+    0: {{ settings.hours_monday if settings else 7.0 }},
+    1: {{ settings.hours_tuesday if settings else 7.0 }},
+    2: {{ settings.hours_wednesday if settings else 7.0 }},
+    3: {{ settings.hours_thursday if settings else 7.0 }},
+    4: {{ settings.hours_friday if settings else 7.0 }},
+    5: {{ settings.hours_saturday if settings else 0.0 }},
+    6: {{ settings.hours_sunday if settings else 0.0 }}
+  };
+
+  // Overrides from server
+  let overrides = {};
+  {% for override in overrides %}
+  overrides["{{ override.date.isoformat() }}"] = {{ override.hours }};
+  {% endfor %}
+
+  let currentDate = new Date();
+  let selectedDate = null;
+
+  function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    // Update label
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    document.getElementById('calendar-month-label').textContent = `${monthNames[month]} ${year}`;
+
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const totalDays = lastDay.getDate();
+
+    // Monday = 0, Sunday = 6 (adjust from JS default)
+    let startDayOfWeek = firstDay.getDay() - 1;
+    if (startDayOfWeek < 0) startDayOfWeek = 6;
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    let html = '';
+
+    // Previous month days
+    const prevMonth = new Date(year, month, 0);
+    const prevMonthDays = prevMonth.getDate();
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      const date = new Date(year, month - 1, day);
+      html += createDayCell(date, true);
+    }
+
+    // Current month days
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month, day);
+      const dateStr = date.toISOString().split('T')[0];
+      const isToday = dateStr === todayStr;
+      html += createDayCell(date, false, isToday);
+    }
+
+    // Next month days
+    const cellsRendered = startDayOfWeek + totalDays;
+    const cellsNeeded = Math.ceil(cellsRendered / 7) * 7;
+    for (let i = 1; i <= cellsNeeded - cellsRendered; i++) {
+      const date = new Date(year, month + 1, i);
+      html += createDayCell(date, true);
+    }
+
+    document.getElementById('calendar-days').innerHTML = html;
+  }
+
+  function createDayCell(date, isOtherMonth, isToday = false) {
+    const dateStr = date.toISOString().split('T')[0];
+    // Convert JS day (0=Sun) to our format (0=Mon)
+    let weekday = date.getDay() - 1;
+    if (weekday < 0) weekday = 6;
+
+    const hasOverride = overrides.hasOwnProperty(dateStr);
+    const hours = hasOverride ? overrides[dateStr] : weekdayDefaults[weekday];
+
+    let classes = 'calendar-day';
+    if (isOtherMonth) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (hasOverride) classes += ' has-override';
+
+    return `
+      <div class="${classes}" onclick="openDayModal('${dateStr}', ${weekday})">
+        <span class="day-number">${date.getDate()}</span>
+        <span class="day-hours">${hours}h</span>
+      </div>
+    `;
+  }
+
+  function changeMonth(delta) {
+    currentDate.setMonth(currentDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function openDayModal(dateStr, weekday) {
+    selectedDate = dateStr;
+    const hasOverride = overrides.hasOwnProperty(dateStr);
+    const currentHours = hasOverride ? overrides[dateStr] : weekdayDefaults[weekday];
+
+    document.getElementById('modal-date-label').textContent = `Edit: ${dateStr}`;
+    document.getElementById('override-hours').value = currentHours;
+    document.getElementById('modal-default-hint').textContent =
+      `Default for this day: ${weekdayDefaults[weekday]} hours`;
+    document.getElementById('btn-reset-default').style.display = hasOverride ? 'block' : 'none';
+
+    document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById('day-modal').style.display = 'block';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.getElementById('day-modal').style.display = 'none';
+    selectedDate = null;
+  }
+
+  async function saveOverride() {
+    const hours = parseFloat(document.getElementById('override-hours').value);
+
+    const response = await fetch('/api/capacity-override', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: selectedDate, hours: hours })
+    });
+
+    if (response.ok) {
+      overrides[selectedDate] = hours;
+      renderCalendar();
+      closeModal();
+      showSuccess();
+    }
+  }
+
+  async function resetToDefault() {
+    const response = await fetch('/api/capacity-override', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: selectedDate })
+    });
+
+    if (response.ok) {
+      delete overrides[selectedDate];
+      renderCalendar();
+      closeModal();
+      showSuccess();
+    }
+  }
+
+  function showSuccess() {
+    const msg = document.getElementById('success-message');
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  }
+
+  // Profile form
+  document.getElementById('profile-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    const response = await fetch('/api/settings/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ owner_name: formData.get('owner_name') })
+    });
+
+    if (response.ok) showSuccess();
+  });
+
+  // Weekday defaults form
+  document.getElementById('weekday-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+      data[key] = parseFloat(value);
+      // Update local defaults
+      const dayIndex = ['hours_monday', 'hours_tuesday', 'hours_wednesday',
+                        'hours_thursday', 'hours_friday', 'hours_saturday', 'hours_sunday'].indexOf(key);
+      if (dayIndex >= 0) weekdayDefaults[dayIndex] = parseFloat(value);
+    }
+
+    const response = await fetch('/api/settings/weekdays', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      renderCalendar();
+      showSuccess();
+    }
+  });
+
+  // Initial render
+  renderCalendar();
+</script>
+
+</body>
+</html>
