@@ -17,11 +17,6 @@ A personal task and project management app built with Flask. Manage complex proj
 - **Calendar** — FullCalendar view of events and recurring tasks with drag-and-drop rescheduling
 - **Flowchart** — D3.js dependency graph showing task relationships; auto-reduces redundant edges; supports custom node positioning and edge routing
 
-### Settings
-- Set your name as the default task owner
-- Configure weekly capacity (hours per weekday)
-- Override capacity for specific dates
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -69,7 +64,6 @@ project_manager/
 ├── models.py               # SQLAlchemy models
 ├── templates/
 │   ├── index.html          # Main single-page app
-│   ├── settings.html       # Settings page
 │   └── task_modal.html     # Task detail/edit modal
 ├── flowchart_positions.json # Saved flowchart node positions
 └── instance/
@@ -81,7 +75,5 @@ project_manager/
 - **Task** — Core task with status, scheduling, recurrence, and dependency relationships
 - **TaskDependency** — Many-to-many join table linking tasks to their dependencies
 - **CompletionRecord** — Time-tracked completion entries per task
-- **AppSettings** — Single-row config for owner name and weekly capacity
-- **DailyCapacityOverride** — Per-date capacity overrides
 - **FlowchartNodePosition** — Custom x/y positions for flowchart nodes
 - **FlowchartEdgeCustomization** — Custom port assignments and waypoints for edges

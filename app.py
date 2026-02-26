@@ -1,6 +1,6 @@
 
 from flask import Flask, request, render_template, redirect, jsonify
-from models import db, Task, TaskDependency, CompletionRecord, AppSettings, DailyCapacityOverride, StatusCache, FlowchartNodePosition, FlowchartEdgeCustomization
+from models import db, Task, TaskDependency, CompletionRecord, StatusCache, FlowchartNodePosition, FlowchartEdgeCustomization
 from datetime import datetime, date, timedelta
 import calendar as cal
 import json
@@ -803,106 +803,6 @@ def create_dependency_api():
     db.session.commit()
 
     return jsonify({'success': True})
-
-
-# --- App Settings ---
-
-@app.route("/settings")
-def settings_page():
-    """Settings page."""
-    settings = AppSettings.query.first()
-    overrides = DailyCapacityOverride.query.all()
-    return render_template("settings.html", settings=settings, overrides=overrides)
-
-
-@app.route("/api/settings/profile", methods=["POST"])
-def update_profile():
-    """Update owner name."""
-    data = request.get_json()
-    settings = AppSettings.query.first()
-    if not settings:
-        settings = AppSettings(owner_name=data.get("owner_name", ""))
-        db.session.add(settings)
-    else:
-        settings.owner_name = data.get("owner_name", "")
-    db.session.commit()
-    return jsonify({"success": True})
-
-
-@app.route("/api/settings/weekdays", methods=["POST"])
-def update_weekdays():
-    """Update weekly default hours."""
-    data = request.get_json()
-    settings = AppSettings.query.first()
-    if not settings:
-        settings = AppSettings(owner_name="")
-        db.session.add(settings)
-
-    settings.hours_monday = data.get("hours_monday", 7.0)
-    settings.hours_tuesday = data.get("hours_tuesday", 7.0)
-    settings.hours_wednesday = data.get("hours_wednesday", 7.0)
-    settings.hours_thursday = data.get("hours_thursday", 7.0)
-    settings.hours_friday = data.get("hours_friday", 7.0)
-    settings.hours_saturday = data.get("hours_saturday", 0.0)
-    settings.hours_sunday = data.get("hours_sunday", 0.0)
-
-    db.session.commit()
-    return jsonify({"success": True})
-
-
-@app.route("/api/capacity-override", methods=["POST"])
-def set_capacity_override():
-    """Set or update capacity for a specific date."""
-    data = request.get_json()
-    date_str = data.get("date")
-    hours = data.get("hours")
-
-    override_date = date.fromisoformat(date_str)
-
-    override = DailyCapacityOverride.query.filter_by(date=override_date).first()
-    if override:
-        override.hours = hours
-    else:
-        override = DailyCapacityOverride(date=override_date, hours=hours)
-        db.session.add(override)
-
-    db.session.commit()
-    return jsonify({"success": True})
-
-
-@app.route("/api/capacity-override", methods=["DELETE"])
-def delete_capacity_override():
-    """Remove capacity override for a specific date."""
-    data = request.get_json()
-    date_str = data.get("date")
-    override_date = date.fromisoformat(date_str)
-
-    override = DailyCapacityOverride.query.filter_by(date=override_date).first()
-    if override:
-        db.session.delete(override)
-        db.session.commit()
-
-    return jsonify({"success": True})
-
-
-@app.route("/api/capacity/<date_str>")
-def get_capacity_for_date(date_str):
-    """Get capacity for a specific date (considering overrides and defaults)."""
-    target_date = date.fromisoformat(date_str)
-
-    # Check for override
-    override = DailyCapacityOverride.query.filter_by(date=target_date).first()
-    if override:
-        return jsonify({"date": date_str, "hours": override.hours, "is_override": True})
-
-    # Fall back to weekday default
-    settings = AppSettings.query.first()
-    if settings:
-        hours = settings.get_weekday_hours(target_date.weekday())
-    else:
-        hours = 7.0 if target_date.weekday() < 5 else 0.0
-
-    return jsonify({"date": date_str, "hours": hours, "is_override": False})
 
 
 # --- Flowchart Customization ---

@@ -329,41 +329,6 @@ class CompletionRecord(db.Model):
     interval_number = db.Column(db.Integer, default=1)
 
 
-# App settings table (default execution capacity hours)
-class AppSettings(db.Model):
-    """App configuration (single row)."""
-    id = db.Column(db.Integer, primary_key=True)
-    owner_name = db.Column(db.String(100), nullable=False)
-    # Default hours per weekday (0=Monday, 6=Sunday)
-    hours_monday = db.Column(db.Float, default=1.0)
-    hours_tuesday = db.Column(db.Float, default=1.0)
-    hours_wednesday = db.Column(db.Float, default=1.0)
-    hours_thursday = db.Column(db.Float, default=1.0)
-    hours_friday = db.Column(db.Float, default=1.0)
-    hours_saturday = db.Column(db.Float, default=5.0)
-    hours_sunday = db.Column(db.Float, default=5.0)
-
-    def get_weekday_hours(self, weekday):
-        """Get default hours for a weekday (0=Monday, 6=Sunday)."""
-        mapping = {
-            0: self.hours_monday,
-            1: self.hours_tuesday,
-            2: self.hours_wednesday,
-            3: self.hours_thursday,
-            4: self.hours_friday,
-            5: self.hours_saturday,
-            6: self.hours_sunday
-        }
-        return mapping.get(weekday, 7.0)
-
-# Daily capacity override table (used to override default execution hours in app settings)
-class DailyCapacityOverride(db.Model):
-    """Override capacity for a specific date."""
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False, unique=True)
-    hours = db.Column(db.Float, nullable=False)
-
-
 # Flowchart customization tables
 class FlowchartNodePosition(db.Model):
     """Custom node positions in flowchart (overrides auto-layout)."""
