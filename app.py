@@ -5,7 +5,7 @@ try:
     HAS_MIGRATE = True
 except ImportError:
     HAS_MIGRATE = False
-from models import db, Task, TaskDependency, CompletionRecord, AppSettings, DailyCapacityOverride, StatusCache, FlowchartNodePosition, FlowchartEdgeCustomization, Habit, HabitCompletion
+from models import db, Task, TaskDependency, CompletionRecord, AppSettings, DailyCapacityOverride, StatusCache, FlowchartNodePosition, FlowchartEdgeCustomization
 from datetime import datetime, date, timedelta
 import calendar as cal
 import json
@@ -262,43 +262,52 @@ def parse_recurrence_days(form):
             days.append(str(i))
     return ",".join(days) if days else None
 
+
+def apply_recurrence_fields(task, form):
+    """Apply recurrence fields from form data onto a task object."""
+    task.recurrence_frequency = form.get("recurrence_frequency", "daily")
+    task.recurrence_interval = int(form.get("recurrence_interval", 1))
+    task.recurrence_days = parse_recurrence_days(form)
+    task.recurrence_month_type = form.get("recurrence_month_type", "day_of_month")
+    task.recurrence_end_type = form.get("recurrence_end_type", "never")
+
+    if task.recurrence_end_type == "after":
+        task.recurrence_end_count = int(form.get("recurrence_end_count", 10))
+        task.recurrence_end_date = None
+    elif task.recurrence_end_type == "on_date" and form.get("recurrence_end_date"):
+        task.recurrence_end_date = date.fromisoformat(form["recurrence_end_date"])
+        task.recurrence_end_count = None
+    else:
+        task.recurrence_end_count = None
+        task.recurrence_end_date = None
+
+
+def parse_task_fields(form):
+    """Parse common task fields from form data, returning a dict of field values."""
+    scheduled_datetime = datetime.fromisoformat(form["scheduled_datetime"]) if form.get("scheduled_datetime") else None
+    is_fixed_time = bool(form.get("fixed_time")) and scheduled_datetime is not None
+    return {
+        "title": form["title"],
+        "description": form.get("description"),
+        "owner": form.get("owner"),
+        "estimated_duration": float(form["estimated_duration"]) if form.get("estimated_duration") else None,
+        "unknown_dependencies": bool(form.get("unknown_dependencies")),
+        "awaiting": bool(form.get("awaiting")),
+        "recurring": bool(form.get("recurring")),
+        "scheduled_datetime": scheduled_datetime,
+        "fixed_time": is_fixed_time,
+        "deadline": datetime.fromisoformat(form["deadline"]) if form.get("deadline") else None,
+    }
+
+
 # Create task
 @app.route("/create-task", methods=["POST"])
 def create_task():
-    is_recurring = bool(request.form.get("recurring"))
-    is_fixed_time = bool(request.form.get("fixed_time"))
-    scheduled_datetime = datetime.fromisoformat(request.form["scheduled_datetime"]) if request.form.get("scheduled_datetime") else None
+    fields = parse_task_fields(request.form)
+    task = Task(**fields, created_datetime=datetime.now())
 
-    # Validate: fixed_time requires scheduled_datetime
-    if is_fixed_time and not scheduled_datetime:
-        is_fixed_time = False  # Silently disable fixed_time if no scheduled datetime
-
-    task = Task(
-        title=request.form["title"],
-        description=request.form.get("description"),
-        owner=request.form.get("owner"),
-        estimated_duration=float(request.form["estimated_duration"]) if request.form.get("estimated_duration") else None,
-        unknown_dependencies=bool(request.form.get("unknown_dependencies")),
-        awaiting=bool(request.form.get("awaiting")),
-        recurring=is_recurring,
-        scheduled_datetime=scheduled_datetime,
-        fixed_time=is_fixed_time,
-        deadline=datetime.fromisoformat(request.form["deadline"]) if request.form.get("deadline") else None,
-        created_datetime=datetime.now()
-    )
-
-    # Set recurring fields if recurring
-    if is_recurring:
-        task.recurrence_frequency = request.form.get("recurrence_frequency", "daily")
-        task.recurrence_interval = int(request.form.get("recurrence_interval", 1))
-        task.recurrence_days = parse_recurrence_days(request.form)
-        task.recurrence_month_type = request.form.get("recurrence_month_type", "day_of_month")
-        task.recurrence_end_type = request.form.get("recurrence_end_type", "never")
-
-        if task.recurrence_end_type == "after":
-            task.recurrence_end_count = int(request.form.get("recurrence_end_count", 10))
-        elif task.recurrence_end_type == "on_date" and request.form.get("recurrence_end_date"):
-            task.recurrence_end_date = date.fromisoformat(request.form["recurrence_end_date"])
+    if task.recurring:
+        apply_recurrence_fields(task, request.form)
 
     db.session.add(task)
     db.session.commit()
@@ -381,47 +390,18 @@ def reschedule_task(task_id):
 @app.route("/update-task/<int:task_id>", methods=["POST"])
 def update_task(task_id):
     task = Task.query.get_or_404(task_id)
-    task.title = request.form["title"]
-    task.description = request.form.get("description")
-    task.owner = request.form.get("owner")
-    task.estimated_duration = float(request.form["estimated_duration"]) if request.form.get("estimated_duration") else None
-    task.unknown_dependencies = bool(request.form.get("unknown_dependencies"))
-    task.awaiting = bool(request.form.get("awaiting"))
-    task.scheduled_datetime = datetime.fromisoformat(request.form["scheduled_datetime"]) if request.form.get("scheduled_datetime") else None
-    task.deadline = datetime.fromisoformat(request.form["deadline"]) if request.form.get("deadline") else None
+    fields = parse_task_fields(request.form)
+    for key, value in fields.items():
+        setattr(task, key, value)
 
-    # Validate: fixed_time requires scheduled_datetime
-    is_recurring = bool(request.form.get("recurring"))
-    is_fixed_time = bool(request.form.get("fixed_time"))
-    task.recurring = is_recurring
-    task.fixed_time = is_fixed_time and task.scheduled_datetime is not None
-
-    # Update recurring fields
     if task.recurring:
-        task.recurrence_frequency = request.form.get("recurrence_frequency", "daily")
-        task.recurrence_interval = int(request.form.get("recurrence_interval", 1))
-        task.recurrence_days = parse_recurrence_days(request.form)
-        task.recurrence_month_type = request.form.get("recurrence_month_type", "day_of_month")
-        task.recurrence_end_type = request.form.get("recurrence_end_type", "never")
-
-        if task.recurrence_end_type == "after":
-            task.recurrence_end_count = int(request.form.get("recurrence_end_count", 10))
-            task.recurrence_end_date = None
-        elif task.recurrence_end_type == "on_date" and request.form.get("recurrence_end_date"):
-            task.recurrence_end_date = date.fromisoformat(request.form["recurrence_end_date"])
-            task.recurrence_end_count = None
-        else:
-            task.recurrence_end_count = None
-            task.recurrence_end_date = None
+        apply_recurrence_fields(task, request.form)
     else:
-        # Clear recurring fields if not recurring
-        task.recurrence_frequency = None
-        task.recurrence_interval = None
-        task.recurrence_days = None
-        task.recurrence_month_type = None
-        task.recurrence_end_type = None
-        task.recurrence_end_count = None
-        task.recurrence_end_date = None
+        # Clear recurring fields if no longer recurring
+        for field in ('recurrence_frequency', 'recurrence_interval', 'recurrence_days',
+                      'recurrence_month_type', 'recurrence_end_type',
+                      'recurrence_end_count', 'recurrence_end_date'):
+            setattr(task, field, None)
 
     db.session.commit()
     return redirect("/")
@@ -1022,213 +1002,6 @@ def reset_edge_customization():
         db.session.commit()
 
     return jsonify({'success': True})
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Habits API
-# ─────────────────────────────────────────────────────────────────────────────
-
-@app.route('/api/habits', methods=['GET'])
-def get_habits():
-    """Get all habits (non-archived)."""
-    habits = Habit.query.filter_by(archived=False).order_by(Habit.created_at).all()
-    return jsonify([{
-        'id': h.id,
-        'name': h.name,
-        'description': h.description,
-        'category': h.category,
-        'schedule': h.schedule,
-        'days': [int(d) for d in h.days.split(',')] if h.days else [],
-        'occurrences': h.occurrences,
-        'target_adherence': h.target_adherence,
-        'active': h.active,
-        'created_at': h.created_at.isoformat() if h.created_at else None
-    } for h in habits])
-
-
-@app.route('/api/habits/categories', methods=['GET'])
-def get_habit_categories():
-    """Get all unique habit categories."""
-    categories = db.session.query(Habit.category).filter(
-        Habit.archived == False,
-        Habit.category != None,
-        Habit.category != ''
-    ).distinct().all()
-    return jsonify([c[0] for c in categories if c[0]])
-
-
-@app.route('/api/habits', methods=['POST'])
-def create_habit():
-    """Create a new habit."""
-    data = request.get_json()
-
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'error': 'Name is required'}), 400
-
-    habit = Habit(
-        name=name,
-        description=data.get('description', '').strip(),
-        category=data.get('category', '').strip() or None,
-        schedule=data.get('schedule', 'daily'),
-        days=','.join(str(d) for d in data.get('days', [])) if data.get('days') else None,
-        occurrences=data.get('occurrences', 1),
-        target_adherence=data.get('target_adherence', 100),
-        active=data.get('active', True),
-        created_at=datetime.utcnow()
-    )
-
-    db.session.add(habit)
-    db.session.commit()
-
-    return jsonify({
-        'id': habit.id,
-        'name': habit.name,
-        'description': habit.description,
-        'category': habit.category,
-        'schedule': habit.schedule,
-        'days': [int(d) for d in habit.days.split(',')] if habit.days else [],
-        'occurrences': habit.occurrences,
-        'target_adherence': habit.target_adherence,
-        'active': habit.active,
-        'created_at': habit.created_at.isoformat()
-    }), 201
-
-
-@app.route('/api/habits/<int:habit_id>', methods=['PUT'])
-def update_habit(habit_id):
-    """Update an existing habit."""
-    habit = Habit.query.get_or_404(habit_id)
-    data = request.get_json()
-
-    name = data.get('name', '').strip()
-    if not name:
-        return jsonify({'error': 'Name is required'}), 400
-
-    habit.name = name
-    habit.description = data.get('description', '').strip()
-    habit.category = data.get('category', '').strip() or None
-    habit.schedule = data.get('schedule', 'daily')
-    habit.days = ','.join(str(d) for d in data.get('days', [])) if data.get('days') else None
-    habit.occurrences = data.get('occurrences', 1)
-    habit.target_adherence = data.get('target_adherence', 100)
-    habit.active = data.get('active', True)
-
-    db.session.commit()
-
-    return jsonify({
-        'id': habit.id,
-        'name': habit.name,
-        'description': habit.description,
-        'category': habit.category,
-        'schedule': habit.schedule,
-        'days': [int(d) for d in habit.days.split(',')] if habit.days else [],
-        'occurrences': habit.occurrences,
-        'target_adherence': habit.target_adherence,
-        'created_at': habit.created_at.isoformat() if habit.created_at else None
-    })
-
-
-@app.route('/api/habits/<int:habit_id>', methods=['DELETE'])
-def delete_habit(habit_id):
-    """Archive a habit (soft delete)."""
-    habit = Habit.query.get_or_404(habit_id)
-    habit.archived = True
-    db.session.commit()
-    return jsonify({'success': True})
-
-
-@app.route('/api/habits/completions', methods=['GET'])
-def get_habit_completions():
-    """Get habit completions for a date range."""
-    start_date_str = request.args.get('start')
-    end_date_str = request.args.get('end')
-
-    # Parse dates
-    try:
-        if start_date_str:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        else:
-            # Default: first completion date or 30 days ago
-            first_completion = HabitCompletion.query.order_by(HabitCompletion.completed_date).first()
-            if first_completion:
-                start_date = first_completion.completed_date
-            else:
-                start_date = (datetime.now() - timedelta(days=30)).date()
-
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-        else:
-            end_date = datetime.now().date()
-    except ValueError:
-        return jsonify({'error': 'Invalid date format'}), 400
-
-    # Get completions in range
-    completions = HabitCompletion.query.filter(
-        HabitCompletion.completed_date >= start_date,
-        HabitCompletion.completed_date <= end_date
-    ).all()
-
-    # Format as dict: {habit_id: [date1, date2, ...]}
-    completion_map = {}
-    for c in completions:
-        if c.habit_id not in completion_map:
-            completion_map[c.habit_id] = []
-        completion_map[c.habit_id].append(c.completed_date.isoformat())
-
-    return jsonify({
-        'start_date': start_date.isoformat(),
-        'end_date': end_date.isoformat(),
-        'completions': completion_map
-    })
-
-
-@app.route('/api/habits/<int:habit_id>/complete', methods=['POST'])
-def toggle_habit_completion(habit_id):
-    """Toggle habit completion for a specific date."""
-    habit = Habit.query.get_or_404(habit_id)
-    data = request.get_json()
-
-    date_str = data.get('date')
-    if not date_str:
-        return jsonify({'error': 'Date is required'}), 400
-
-    try:
-        completion_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-    except ValueError:
-        return jsonify({'error': 'Invalid date format'}), 400
-
-    # Check if completion already exists
-    existing = HabitCompletion.query.filter_by(
-        habit_id=habit_id,
-        completed_date=completion_date
-    ).first()
-
-    if existing:
-        # Remove completion (toggle off)
-        db.session.delete(existing)
-        db.session.commit()
-        return jsonify({'completed': False, 'date': date_str})
-    else:
-        # Add completion (toggle on)
-        completion = HabitCompletion(
-            habit_id=habit_id,
-            completed_date=completion_date,
-            completed_at=datetime.utcnow()
-        )
-        db.session.add(completion)
-        db.session.commit()
-        return jsonify({'completed': True, 'date': date_str})
-
-
-@app.route('/api/habits/first-completion-date', methods=['GET'])
-def get_first_completion_date():
-    """Get the date of the first habit completion."""
-    first_completion = HabitCompletion.query.order_by(HabitCompletion.completed_date).first()
-    if first_completion:
-        return jsonify({'date': first_completion.completed_date.isoformat()})
-    else:
-        return jsonify({'date': None})
 
 
 if __name__ == "__main__":

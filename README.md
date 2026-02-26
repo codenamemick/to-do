@@ -1,6 +1,6 @@
 # To do list app
 
-A personal task and habit management app built with Flask. Manage complex projects with dependency tracking, visualize task relationships, track recurring habits, and plan your schedule — all in one place.
+A personal task and project management app built with Flask. Manage complex projects with dependency tracking, visualize task relationships, and plan your schedule — all in one place.
 
 ## Features
 
@@ -16,13 +16,6 @@ A personal task and habit management app built with Flask. Manage complex projec
 - **Kanban** — Color-coded columns for at-a-glance project status
 - **Calendar** — FullCalendar view of events and recurring tasks with drag-and-drop rescheduling
 - **Flowchart** — D3.js dependency graph showing task relationships; auto-reduces redundant edges; supports custom node positioning and edge routing
-- **Habits** — Date-range grid for tracking daily habit completions with adherence percentages
-
-### Habit Tracker
-- Create habits with categories, schedules (daily/weekly/monthly), and target adherence percentages
-- Check off completions directly in the grid
-- Filter by date range
-- Archive inactive habits
 
 ### Settings
 - Set your name as the default task owner
@@ -90,8 +83,6 @@ project_manager/
 - **Task** — Core task with status, scheduling, recurrence, and dependency relationships
 - **TaskDependency** — Many-to-many join table linking tasks to their dependencies
 - **CompletionRecord** — Time-tracked completion entries per task
-- **Habit** — Habit definition with schedule and adherence target
-- **HabitCompletion** — Per-date completion records for habits
 - **AppSettings** — Single-row config for owner name and weekly capacity
 - **DailyCapacityOverride** — Per-date capacity overrides
 - **FlowchartNodePosition** — Custom x/y positions for flowchart nodes

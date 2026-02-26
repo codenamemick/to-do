@@ -180,10 +180,10 @@ class Task(db.Model):
 
     @property
     def incomplete_dependencies(self):
-        """Return list of incomplete dependency tasks."""
+        """Return list of incomplete, non-deleted dependency tasks."""
         return [
             dep.depends_on_task for dep in self.dependencies
-            if dep.depends_on_task.status != 'Complete'
+            if not dep.depends_on_task.deleted and dep.depends_on_task.status != 'Complete'
         ]
 
     @property
@@ -384,40 +384,4 @@ class FlowchartEdgeCustomization(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint('from_task_id', 'to_task_id', name='unique_edge_custom'),
-    )
-
-
-# Habits tables
-class Habit(db.Model):
-    """A habit to track regularly."""
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    category = db.Column(db.String(100))  # Category for grouping habits
-    schedule = db.Column(db.String(20), default='daily')  # 'daily', 'weekly', or 'monthly'
-    days = db.Column(db.String(20))  # For weekly: comma-separated day numbers (0=Mon, 6=Sun)
-    occurrences = db.Column(db.Integer, default=1)  # Number of times per period
-    target_adherence = db.Column(db.Integer, default=100)  # Target adherence percentage (0-100)
-    active = db.Column(db.Boolean, default=True)  # Whether the habit is currently active
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    archived = db.Column(db.Boolean, default=False)
-
-    # Relationship to completion records
-    completions = db.relationship(
-        'HabitCompletion',
-        backref='habit',
-        lazy='select',
-        cascade='all, delete-orphan'
-    )
-
-
-class HabitCompletion(db.Model):
-    """Records when a habit was completed."""
-    id = db.Column(db.Integer, primary_key=True)
-    habit_id = db.Column(db.Integer, db.ForeignKey('habit.id'), nullable=False)
-    completed_date = db.Column(db.Date, nullable=False)
-    completed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    __table_args__ = (
-        db.UniqueConstraint('habit_id', 'completed_date', name='unique_habit_completion'),
     )
