@@ -38,7 +38,7 @@ A personal task and project management app built with Flask. Manage complex proj
 
 **1. Clone the repo and navigate to the project directory:**
 ```bash
-git clone <https://github.com/codenamemick/to-do.git>
+git clone https://github.com/codenamemick/to-do.git
 cd project_manager
 ```
 
