@@ -28,7 +28,6 @@ A personal task and project management app built with Flask. Manage complex proj
 |---|---|
 | Backend | Python 3.9+, Flask 3.1, Flask-SQLAlchemy |
 | Database | SQLite (via SQLAlchemy) |
-| Migrations | Flask-Migrate |
 | Frontend | Vanilla JS, HTML5, CSS3 |
 | Calendar | FullCalendar 6.1.8 |
 | Graph | D3.js v7 |
@@ -50,7 +49,7 @@ source venv/bin/activate
 
 **3. Install dependencies:**
 ```bash
-pip install flask flask-sqlalchemy flask-migrate
+pip install flask flask-sqlalchemy
 ```
 
 **4. Run the app:**
@@ -72,7 +71,6 @@ project_manager/
 │   ├── index.html          # Main single-page app
 │   ├── settings.html       # Settings page
 │   └── task_modal.html     # Task detail/edit modal
-├── migrations/             # Flask-Migrate migration files
 ├── flowchart_positions.json # Saved flowchart node positions
 └── instance/
     └── project.db          # SQLite database (auto-created)

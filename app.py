@@ -1,10 +1,5 @@
 
 from flask import Flask, request, render_template, redirect, jsonify
-try:
-    from flask_migrate import Migrate
-    HAS_MIGRATE = True
-except ImportError:
-    HAS_MIGRATE = False
 from models import db, Task, TaskDependency, CompletionRecord, AppSettings, DailyCapacityOverride, StatusCache, FlowchartNodePosition, FlowchartEdgeCustomization
 from datetime import datetime, date, timedelta
 import calendar as cal
@@ -16,8 +11,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///project.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
-if HAS_MIGRATE:
-    migrate = Migrate(app, db)
 
 
 @app.before_request
