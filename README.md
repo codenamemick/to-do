@@ -1,6 +1,6 @@
 # To do list app
 
-A personal task and project management app built with Flask. Manage complex projects with dependency tracking, visualize task relationships, and plan your schedule — all in one place.
+A personal task and project management app built with Flask. Manage complex projects with dependency tracking, visualise task relationships, and plan your schedule — all in one place.
 
 ## Features
 
