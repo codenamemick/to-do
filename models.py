@@ -35,7 +35,6 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    owner = db.Column(db.String(100))
     estimated_duration = db.Column(db.Float)
     unknown_dependencies = db.Column(db.Boolean, default=False)
     recurring = db.Column(db.Boolean, default=False)
@@ -185,14 +184,6 @@ class Task(db.Model):
             dep.depends_on_task for dep in self.dependencies
             if not dep.depends_on_task.deleted and dep.depends_on_task.status != 'Complete'
         ]
-
-    @property
-    def completed_datetime(self):
-        """Return the latest completion record end_time."""
-        if not self.completion_records:
-            return None
-        latest = max(self.completion_records, key=lambda r: r.end_time)
-        return latest.end_time
 
     def get_downstream_count(self, visited=None):
         """Count all tasks that depend on this task (recursively), excluding Complete and deleted."""

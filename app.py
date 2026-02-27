@@ -168,7 +168,7 @@ def home():
         if task.status not in ('Event', 'Recurring'):
             continue
 
-        task_color_dark = STATUS_COLORS.get(task.status, '#2196f3')
+        task_color = STATUS_COLORS.get(task.status, '#2196f3')
 
         if task.recurring:
             # Generate recurring instances
@@ -178,8 +178,7 @@ def home():
                     'id': task.id,
                     'title': task.title,
                     'start': instance_date.isoformat(),
-                    'color': task_color_dark,
-                    'colorDark': task_color_dark
+                    'color': task_color,
                 })
         else:
             # Single event
@@ -187,8 +186,7 @@ def home():
                 'id': task.id,
                 'title': task.title,
                 'start': task.scheduled_datetime.isoformat(),
-                'color': task_color_dark,
-                'colorDark': task_color_dark
+                'color': task_color,
             })
 
     return render_template("index.html", tasks=tasks, actions_sorted=actions_sorted, awaiting_sorted=awaiting_sorted, blocked_sorted=blocked_sorted, goals_sorted=goals_sorted, recurring_sorted=recurring_sorted, calendar_events=calendar_events, now=datetime.now())
@@ -282,7 +280,6 @@ def parse_task_fields(form):
     return {
         "title": form["title"],
         "description": form.get("description"),
-        "owner": form.get("owner"),
         "estimated_duration": float(form["estimated_duration"]) if form.get("estimated_duration") else None,
         "unknown_dependencies": bool(form.get("unknown_dependencies")),
         "awaiting": bool(form.get("awaiting")),
@@ -325,22 +322,6 @@ def create_task():
     redirect_view = request.form.get("redirect_view", "kanban")
     return redirect(f"/?view={redirect_view}")
 
-# Edit task
-@app.route("/edit-task/<int:task_id>", methods=["POST"])
-def edit_task(task_id):
-    task = Task.query.get(task_id)
-    task.title = request.form["title"]
-    db.session.commit()
-    return redirect("/")
-
-# Delete task
-@app.route("/delete-task/<int:task_id>", methods=["POST"])
-def delete_task(task_id):
-    """Soft delete a task (set deleted flag)."""
-    task = Task.query.get_or_404(task_id)
-    task.deleted = True
-    db.session.commit()
-    return redirect("/")
 
 # Quick delete task
 @app.route("/task/<int:task_id>/quick-delete", methods=["POST"])
@@ -402,16 +383,6 @@ def update_task(task_id):
 
 # --- Dependency Management ---
 
-@app.route("/task/<int:task_id>/dependencies", methods=["GET"])
-def get_dependencies(task_id):
-    """Get all dependencies for a task."""
-    task = Task.query.get_or_404(task_id)
-    dependencies = [
-        {"id": dep.depends_on_task.id, "title": dep.depends_on_task.title}
-        for dep in task.dependencies
-    ]
-    return jsonify(dependencies)
-
 # Add dependency
 @app.route("/task/<int:task_id>/add-dependency", methods=["POST"])
 def add_dependency(task_id):
@@ -451,38 +422,6 @@ def remove_dependency(task_id, depends_on_id):
 
 # --- Task Completion ---
 
-# Complete task
-@app.route("/task/<int:task_id>/complete", methods=["POST"])
-def complete_task(task_id):
-    """Mark a task as complete with time tracking."""
-    task = Task.query.get_or_404(task_id)
-
-    # Check for incomplete dependencies
-    if task.incomplete_dependencies:
-        return jsonify({
-            "error": "Cannot complete task with incomplete dependencies",
-            "incomplete": [t.title for t in task.incomplete_dependencies]
-        }), 400
-
-    # Parse intervals from form
-    intervals = int(request.form.get("intervals", 1))
-
-    for i in range(1, intervals + 1):
-        start_key = f"start_time_{i}" if intervals > 1 else "start_time"
-        end_key = f"end_time_{i}" if intervals > 1 else "end_time"
-
-        record = CompletionRecord(
-            task_id=task_id,
-            start_time=datetime.fromisoformat(request.form[start_key]),
-            end_time=datetime.fromisoformat(request.form[end_key]),
-            interval_number=i
-        )
-        db.session.add(record)
-
-    db.session.commit()
-    return jsonify({"success": True})
-
-# Quick complete task
 @app.route("/task/<int:task_id>/quick-complete", methods=["POST"])
 def quick_complete_task(task_id):
     """Mark a task as complete with current time as start/end (for drag-drop)."""
@@ -641,9 +580,6 @@ def graph_data():
     """
     tasks = Task.query.filter_by(deleted=False).all()
     task_by_id = {task.id: task for task in tasks}
-
-    # Get IDs of all complete tasks
-    complete_task_ids = {task.id for task in tasks if task.status == 'Complete'}
 
     # Find all Goal tasks (these are the roots of our trees going backwards)
     goal_tasks = [task for task in tasks if task.status == 'Goal']
