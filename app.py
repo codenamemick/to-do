@@ -35,7 +35,6 @@ STATUS_COLORS = {
         'Awaiting':   '#757575',
         'Event':      '#da8f1f',
         'Goal':       '#9300ef',
-        'Recurring':  '#00897b',
         'Complete':   '#4caf50',
     }
 
@@ -135,27 +134,14 @@ def home():
     awaiting_sorted = sort_tasks_by_status(tasks, 'Awaiting')
     blocked_sorted = sort_tasks_by_status(tasks, 'Blocked')
 
-    # Sort goal tasks by (downstream_count - upstream_count) DESC
+    # Sort goal tasks by goal-dependency count (fewest first)
     goals_sorted = sorted(
         [t for t in tasks if t.status == 'Goal'],
         key=lambda t: (
-            t.upstream_count,           # lowest first
-            -t.downstream_count,        # highest first
-            t.title.lower()             # alphabetical tie-breaker
+            t.get_upstream_goal_count(),  # fewest goal dependencies first
+            -t.get_downstream_goal_count(),  # most goal dependents first
+            t.title.lower()               # alphabetical tie-breaker
         )
-    )
-
-    # Sort recurring tasks by goal label (alphabetical), then by title
-    def get_recurring_sort_key(task):
-        # Get downstream goals for this task
-        goals = task.get_downstream_goals()
-        # Use the first goal's title alphabetically, or empty string if no goals
-        goal_title = min((g.title.lower() for g in goals), default='') if goals else ''
-        return (goal_title, task.title.lower())
-
-    recurring_sorted = sorted(
-        [t for t in tasks if t.status == 'Recurring'],
-        key=get_recurring_sort_key
     )
 
     # Generate calendar events including recurring instances
@@ -165,7 +151,7 @@ def home():
     end_range = today + timedelta(days=365)   # Show next year
 
     for task in tasks:
-        if task.status not in ('Event', 'Recurring'):
+        if not (task.status == 'Event' or task.recurring):
             continue
 
         task_color = STATUS_COLORS.get(task.status, '#2196f3')
@@ -189,7 +175,7 @@ def home():
                 'color': task_color,
             })
 
-    return render_template("index.html", tasks=tasks, actions_sorted=actions_sorted, awaiting_sorted=awaiting_sorted, blocked_sorted=blocked_sorted, goals_sorted=goals_sorted, recurring_sorted=recurring_sorted, calendar_events=calendar_events, now=datetime.now())
+    return render_template("index.html", tasks=tasks, actions_sorted=actions_sorted, awaiting_sorted=awaiting_sorted, blocked_sorted=blocked_sorted, goals_sorted=goals_sorted, calendar_events=calendar_events, now=datetime.now())
 
 def add_months(dt, months):
     """Add months to a datetime, handling month-end edge cases."""
@@ -318,9 +304,50 @@ def create_task():
 
     db.session.commit()
 
+    # If AJAX request, return JSON instead of redirect
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "task_id": task.id, "task_title": task.title})
+
     # Redirect back to the view the user was on
     redirect_view = request.form.get("redirect_view", "kanban")
     return redirect(f"/?view={redirect_view}")
+
+
+# Duplicate task
+@app.route("/task/<int:task_id>/duplicate", methods=["POST"])
+def duplicate_task(task_id):
+    """Duplicate a task via AJAX, copying its properties and dependencies."""
+    task = Task.query.get_or_404(task_id)
+    new_task = Task(
+        title=task.title + " (copy)",
+        description=task.description,
+        estimated_duration=task.estimated_duration,
+        unknown_dependencies=task.unknown_dependencies,
+        awaiting=task.awaiting,
+        scheduled_datetime=task.scheduled_datetime,
+        fixed_time=task.fixed_time,
+        deadline=task.deadline,
+        created_datetime=datetime.now(),
+    )
+    db.session.add(new_task)
+    db.session.flush()  # Get the new ID
+
+    # Copy dependencies (tasks this task depends on)
+    for dep in task.dependencies:
+        db.session.add(TaskDependency(task_id=new_task.id, depends_on_id=dep.depends_on_id))
+
+    # Copy dependents (tasks that depend on this task)
+    for dep in TaskDependency.query.filter_by(depends_on_id=task_id).all():
+        db.session.add(TaskDependency(task_id=dep.task_id, depends_on_id=new_task.id))
+
+    # Copy node position (offset slightly so it's visible)
+    pos = FlowchartNodePosition.query.filter_by(task_id=task_id).first()
+    if pos:
+        new_pos = FlowchartNodePosition(task_id=new_task.id, x=pos.x + 50, y=pos.y + 50)
+        db.session.add(new_pos)
+
+    db.session.commit()
+    return jsonify({"success": True, "task_id": new_task.id, "task_title": new_task.title})
 
 
 # Quick delete task
@@ -378,6 +405,11 @@ def update_task(task_id):
             setattr(task, field, None)
 
     db.session.commit()
+
+    # If AJAX request, return JSON instead of redirect
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "task_id": task.id, "task_title": task.title})
+
     return redirect("/")
 
 
@@ -556,8 +588,8 @@ def search_tasks():
     else:
         matching_tasks = incomplete_tasks
 
-    # Sort by status order: Free, Blocked, Event, Awaiting, Recurring, Goal
-    status_order = {'Free': 0, 'Blocked': 1, 'Event': 2, 'Awaiting': 3, 'Recurring': 4, 'Goal': 5}
+    # Sort by status order: Free, Blocked, Event, Awaiting, Goal
+    status_order = {'Free': 0, 'Blocked': 1, 'Event': 2, 'Awaiting': 3, 'Goal': 4}
     matching_tasks.sort(key=lambda t: (status_order.get(t.status, 99), t.title.lower()))
 
     results = [{

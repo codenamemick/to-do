@@ -119,11 +119,6 @@ class Task(db.Model):
             cache.statuses[self.id] = 'Event'
             return 'Event'
 
-        # Check if this task is indefinitely recurring
-        if self.recurring and self.recurrence_end_type not in ('after', 'on_date'):
-            cache.statuses[self.id] = 'Recurring'
-            return 'Recurring'
-
         # Check if it's a goal (unknown dependencies) - takes priority over blocked
         if self.unknown_dependencies:
             cache.statuses[self.id] = 'Goal'
@@ -252,6 +247,40 @@ class Task(db.Model):
     def downstream_count(self):
         """Property wrapper for get_downstream_count() for use in Jinja2 sorting."""
         return self.get_downstream_count()
+
+    def get_upstream_goal_count(self, visited=None):
+        """Count all Goal tasks this task depends on (recursively), excluding deleted."""
+        if visited is None:
+            visited = set()
+
+        count = 0
+        for dep in self.dependencies:
+            dep_task = dep.depends_on_task
+            if dep_task.id in visited or dep_task.deleted:
+                continue
+            visited.add(dep_task.id)
+            if dep_task.status == 'Goal':
+                count += 1
+            count += dep_task.get_upstream_goal_count(visited)
+
+        return count
+
+    def get_downstream_goal_count(self, visited=None):
+        """Count all Goal tasks that depend on this task (recursively), excluding deleted."""
+        if visited is None:
+            visited = set()
+
+        count = 0
+        for dep in self.dependents:
+            dependent_task = dep.task
+            if dependent_task.id in visited or dependent_task.deleted:
+                continue
+            visited.add(dependent_task.id)
+            if dependent_task.status == 'Goal':
+                count += 1
+            count += dependent_task.get_downstream_goal_count(visited)
+
+        return count
 
     def get_downstream_goals(self, visited=None):
         """Get all Goal tasks that depend on this task (directly or indirectly).

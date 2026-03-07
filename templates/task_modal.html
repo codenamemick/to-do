@@ -14,7 +14,6 @@
     .status-Awaiting { background: #eeeeee; color: #757575; }
     .status-Event { background: #fff3e0; color: #da8f1f; }
     .status-Goal { background: #f3e5f5; color: #9300ef; }
-    .status-Recurring { background: #e0f2f1; color: #00897b; }
     .status-Complete { background: #e8f5e9; color: #4caf50; }
 
     /* Two-column modal layout */
@@ -139,7 +138,6 @@
     .dependency-list li.dep-status-Awaiting { background: #eeeeee; color: #616161; }
     .dependency-list li.dep-status-Event { background: #fff3e0; color: #e65100; }
     .dependency-list li.dep-status-Goal { background: #f3e5f5; color: #7b1fa2; }
-    .dependency-list li.dep-status-Recurring { background: #e0f2f1; color: #00695c; }
     .dependency-list li.dep-status-Complete { background: #e8f5e9; color: #2e7d32; }
 
 
@@ -215,23 +213,6 @@
       height: 14px;
       accent-color: #2196f3;
       cursor: pointer;
-    }
-
-    /* Compact recurring panel */
-    .recurring-panel {
-      background: #fff;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      font-size: 12px;
-      margin-top: 8px;
-    }
-    .recurring-panel label {
-      text-transform: none;
-      font-weight: 500;
-      color: #555;
-      letter-spacing: normal;
-      font-size: 12px;
     }
 
     /* Side column checkbox styling - label fully left, checkbox aligned in column left of center */
@@ -348,16 +329,16 @@
                         </div>
                     </div>
 
-                    {% set has_relationships = task.dependencies|length > 0 or task.get_downstream_count() > 0 %}
+                    {% set on_dag = task.status == 'Goal' or task.get_downstream_goals()|length > 0 %}
 
-                    {% if has_relationships %}
+                    {% if on_dag %}
                     <div style="display:flex; justify-content:center; margin-top:12px;">
                         <button
                             type="button"
                             class="btn btn-secondary"
                             onclick="viewTaskOnGraph({{ task.id }})"
                         >
-                            View on flowchart
+                            View on DAG
                         </button>
                     </div>
                     {% endif %}
@@ -403,12 +384,6 @@
                             <input type="checkbox" name="fixed_time" id="edit-fixed-time-checkbox" {% if task.fixed_time %}checked{% endif %}>
                         </label>
 
-                        <!-- Recurring -->
-                        <label class="side-checkbox-compact" id="edit-recurring-label">
-                            <span>Recurring</span>
-                            <input type="checkbox" name="recurring" id="edit-recurring-checkbox" {% if task.recurring %}checked{% endif %} onchange="toggleRecurringOptionsEdit()">
-                        </label>
-
                         <!-- Delegated -->
                         <label class="side-checkbox-compact">
                             <span>Delegated</span>
@@ -420,60 +395,6 @@
                             <span>Goal</span>
                             <input type="checkbox" name="unknown_dependencies" {% if task.unknown_dependencies %}checked{% endif %}>
                         </label>
-                    </div>
-                </div>
-
-                <!-- Recurring Options (shows when recurring is checked) -->
-                <div id="edit-recurring-options" class="recurring-panel" style="display:{{ 'block' if task.recurring else 'none' }};">
-                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                        <span>Every</span>
-                        <input type="number" name="recurrence_interval" value="{{ task.recurrence_interval or 1 }}" min="1" style="width:40px; padding:3px 5px; font-size:12px;">
-                        <select name="recurrence_frequency" id="edit-recurrence-frequency" onchange="toggleFrequencyOptionsEdit()" style="padding:3px 5px; font-size:12px;">
-                            <option value="daily" {% if task.recurrence_frequency == 'daily' %}selected{% endif %}>Day(s)</option>
-                            <option value="weekly" {% if task.recurrence_frequency == 'weekly' %}selected{% endif %}>Week(s)</option>
-                            <option value="monthly" {% if task.recurrence_frequency == 'monthly' %}selected{% endif %}>Month(s)</option>
-                            <option value="yearly" {% if task.recurrence_frequency == 'yearly' %}selected{% endif %}>Year(s)</option>
-                        </select>
-                    </div>
-
-                    <!-- Weekly options -->
-                    <div id="edit-weekly-options" style="display:{{ 'flex' if task.recurrence_frequency == 'weekly' else 'none' }}; gap:4px; margin-top:6px; flex-wrap:wrap;">
-                        {% set days = (task.recurrence_days or '').split(',') %}
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_0" value="0" {% if '0' in days %}checked{% endif %} style="width:12px;height:12px;"> M</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_1" value="1" {% if '1' in days %}checked{% endif %} style="width:12px;height:12px;"> T</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_2" value="2" {% if '2' in days %}checked{% endif %} style="width:12px;height:12px;"> W</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_3" value="3" {% if '3' in days %}checked{% endif %} style="width:12px;height:12px;"> T</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_4" value="4" {% if '4' in days %}checked{% endif %} style="width:12px;height:12px;"> F</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_5" value="5" {% if '5' in days %}checked{% endif %} style="width:12px;height:12px;"> S</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_6" value="6" {% if '6' in days %}checked{% endif %} style="width:12px;height:12px;"> S</label>
-                    </div>
-
-                    <!-- Monthly options -->
-                    <div id="edit-monthly-options" style="display:{{ 'flex' if task.recurrence_frequency == 'monthly' else 'none' }}; flex-direction:column; gap:4px; margin-top:6px;">
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                            <input type="radio" name="recurrence_month_type" value="day_of_month" {% if task.recurrence_month_type != 'day_of_week' %}checked{% endif %} style="width:12px;height:12px;"> Same day
-                        </label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                            <input type="radio" name="recurrence_month_type" value="day_of_week" {% if task.recurrence_month_type == 'day_of_week' %}checked{% endif %} style="width:12px;height:12px;"> Same weekday
-                        </label>
-                    </div>
-
-                    <!-- End options -->
-                    <div style="margin-top:6px; font-size:11px;">
-                        <div style="margin-bottom:4px;">Ends:</div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                                <input type="radio" name="recurrence_end_type" value="never" {% if task.recurrence_end_type not in ('after', 'on_date') %}checked{% endif %} onchange="toggleEndOptionsEdit()" style="width:12px;height:12px;"> Never
-                            </label>
-                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                                <input type="radio" name="recurrence_end_type" value="after" {% if task.recurrence_end_type == 'after' %}checked{% endif %} onchange="toggleEndOptionsEdit()" style="width:12px;height:12px;"> After
-                                <input type="number" name="recurrence_end_count" id="edit-end-count" value="{{ task.recurrence_end_count or 10 }}" min="1" style="width:35px; padding:2px 4px; font-size:11px;" {% if task.recurrence_end_type != 'after' %}disabled{% endif %}>
-                            </label>
-                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                                <input type="radio" name="recurrence_end_type" value="on_date" {% if task.recurrence_end_type == 'on_date' %}checked{% endif %} onchange="toggleEndOptionsEdit()" style="width:12px;height:12px;"> Until
-                            </label>
-                            <input type="date" name="recurrence_end_date" id="edit-end-date" value="{{ task.recurrence_end_date.isoformat() if task.recurrence_end_date else '' }}" style="padding:2px 4px; font-size:11px; width:100%; box-sizing:border-box;" {% if task.recurrence_end_type != 'on_date' %}disabled{% endif %}>
-                        </div>
                     </div>
                 </div>
 

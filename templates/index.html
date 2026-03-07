@@ -19,7 +19,6 @@
       --status-awaiting:  #757575;
       --status-event:     #da8f1f;
       --status-goal:      #9300ef;
-      --status-recurring: #00897b;
       --status-complete:  #4caf50;
     }
 
@@ -134,15 +133,6 @@
       min-height: 20px;
     }
 
-    /* Recurring options panel */
-    .recurring-options {
-      background: #f5f7f9;
-      padding: 16px;
-      border-radius: 10px;
-      margin-top: 4px;
-      border: 1px solid #eee;
-    }
-
     /* Button styles */
     .btn {
       padding: 10px 18px;
@@ -238,7 +228,6 @@
     .status-Awaiting   { background: #eeeeee; color: #757575; }
     .status-Event      { background: #fff3e0; color: #da8f1f; }
     .status-Goal       { background: #f3e5f5; color: #9300ef; }
-    .status-Recurring  { background: #e0f2f1; color: #00897b; }
     .status-Complete   { background: #e8f5e9; color: #4caf50; }
 
 
@@ -287,9 +276,6 @@
 
     .kanban-column[data-status="Event"] .kanban-column-header { background: var(--status-event); }
     .kanban-column[data-status="Event"] .kanban-column-body { background: #fff3e0; }
-
-    .kanban-column[data-status="Recurring"] .kanban-column-header { background: var(--status-recurring); }
-    .kanban-column[data-status="Recurring"] .kanban-column-body { background: #e0f2f1; }
 
     .kanban-column[data-status="Goal"] .kanban-column-header { background: var(--status-goal); }
     .kanban-column[data-status="Goal"] .kanban-column-body { background: #f3e5f5; }
@@ -586,19 +572,8 @@
 
     #flowchart-container svg {
       display: block;
-    }
-
-    .flowchart-controls button {
-      padding: 4px 12px;
-      font-size: 15px;
-      border: 1px solid #ddd;
-      background: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .flowchart-controls button:hover {
-      background: #f0f0f0;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .graph-legend {
@@ -623,6 +598,13 @@
     }
 
     /* Flowchart interaction styles */
+    .selection-box {
+      fill: rgba(33, 150, 243, 0.1);
+      stroke: #2196f3;
+      stroke-width: 1;
+      stroke-dasharray: 4,3;
+      pointer-events: none;
+    }
     .node-connector {
       opacity: 0;
       transition: opacity 0.2s;
@@ -957,7 +939,6 @@
     .dependency-list li.dep-status-Awaiting { background: #eeeeee; color: #616161; }
     .dependency-list li.dep-status-Event { background: #fff3e0; color: #e65100; }
     .dependency-list li.dep-status-Goal { background: #f3e5f5; color: #7b1fa2; }
-    .dependency-list li.dep-status-Recurring { background: #e0f2f1; color: #00695c; }
     .dependency-list li.dep-status-Complete { background: #e8f5e9; color: #2e7d32; }
 
     /* Compact checkbox styling for top-right section */
@@ -997,23 +978,6 @@
       accent-color: #2196f3;
       margin: 0;
       flex-shrink: 0;
-    }
-
-    /* Recurring panel */
-    .recurring-panel {
-      background: #fff;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      font-size: 12px;
-      margin-top: 8px;
-    }
-    .recurring-panel label {
-      text-transform: none;
-      font-weight: 500;
-      color: #555;
-      letter-spacing: normal;
-      font-size: 12px;
     }
 
     /* Modal buttons */
@@ -1102,7 +1066,7 @@
     <div class="view-toggle-group" style="width:auto; justify-content:flex-end;">
       <button id="btn-kanban" onclick="showView('kanban')">Kanban</button>
       <button id="btn-calendar" onclick="showView('calendar')">Calendar</button>
-      <button id="btn-flowchart" onclick="showView('flowchart')">Flowchart</button>
+      <button id="btn-flowchart" onclick="showView('flowchart')">DAG</button>
     </div>
   </div>
 
@@ -1192,12 +1156,6 @@
                             <input type="checkbox" name="fixed_time" id="create-fixed-time-checkbox" onchange="updateCreateTaskStatusAndGoals()">
                         </label>
 
-                        <!-- Recurring -->
-                        <label class="side-checkbox-compact" id="create-recurring-label">
-                            <span>Recurring</span>
-                            <input type="checkbox" name="recurring" id="create-recurring-checkbox" onchange="toggleRecurringOptions('create'); updateCreateTaskStatusAndGoals()">
-                        </label>
-
                         <!-- Delegated -->
                         <label class="side-checkbox-compact">
                             <span>Delegated</span>
@@ -1209,59 +1167,6 @@
                             <span>Goal</span>
                             <input type="checkbox" name="unknown_dependencies" onchange="updateCreateTaskStatusAndGoals()">
                         </label>
-                    </div>
-                </div>
-
-                <!-- Recurring Options (shows when recurring is checked) -->
-                <div id="create-recurring-options" class="recurring-panel" style="display:none;">
-                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                        <span>Every</span>
-                        <input type="number" name="recurrence_interval" value="1" min="1" style="width:40px; padding:3px 5px; font-size:12px;">
-                        <select name="recurrence_frequency" id="create-recurrence-frequency" onchange="toggleFrequencyOptions('create')" style="padding:3px 5px; font-size:12px;">
-                            <option value="daily">Day(s)</option>
-                            <option value="weekly">Week(s)</option>
-                            <option value="monthly">Month(s)</option>
-                            <option value="yearly">Year(s)</option>
-                        </select>
-                    </div>
-
-                    <!-- Weekly options -->
-                    <div id="create-weekly-options" style="display:none; gap:4px; margin-top:6px; flex-wrap:wrap;">
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_0" value="0" style="width:12px;height:12px;"> M</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_1" value="1" style="width:12px;height:12px;"> T</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_2" value="2" style="width:12px;height:12px;"> W</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_3" value="3" style="width:12px;height:12px;"> T</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_4" value="4" style="width:12px;height:12px;"> F</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_5" value="5" style="width:12px;height:12px;"> S</label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;"><input type="checkbox" name="recurrence_day_6" value="6" style="width:12px;height:12px;"> S</label>
-                    </div>
-
-                    <!-- Monthly options -->
-                    <div id="create-monthly-options" style="display:none; flex-direction:column; gap:4px; margin-top:6px;">
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                            <input type="radio" name="recurrence_month_type" value="day_of_month" checked style="width:12px;height:12px;"> Same day
-                        </label>
-                        <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                            <input type="radio" name="recurrence_month_type" value="day_of_week" style="width:12px;height:12px;"> Same weekday
-                        </label>
-                    </div>
-
-                    <!-- End options -->
-                    <div style="margin-top:6px; font-size:11px;">
-                        <div style="margin-bottom:4px;">Ends:</div>
-                        <div style="display:flex; flex-direction:column; gap:4px;">
-                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                                <input type="radio" name="recurrence_end_type" value="never" checked onchange="toggleEndOptions('create')" style="width:12px;height:12px;"> Never
-                            </label>
-                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                                <input type="radio" name="recurrence_end_type" value="after" onchange="toggleEndOptions('create')" style="width:12px;height:12px;"> After
-                                <input type="number" name="recurrence_end_count" id="create-end-count" value="10" min="1" style="width:35px; padding:2px 4px; font-size:11px;" disabled>
-                            </label>
-                            <label class="side-checkbox" style="font-size:11px; padding-right:0 !important;">
-                                <input type="radio" name="recurrence_end_type" value="on_date" onchange="toggleEndOptions('create')" style="width:12px;height:12px;"> Until
-                            </label>
-                            <input type="date" name="recurrence_end_date" id="create-end-date" style="padding:2px 4px; font-size:11px; width:100%; box-sizing:border-box;" disabled>
-                        </div>
                     </div>
                 </div>
 
@@ -1315,11 +1220,16 @@
     {% macro task_labels(task) %}
       <div class="kanban-card-labels">
         
-        {% set upstream = task.get_upstream_count() %}
+        {% if task.status == 'Goal' %}
+          {% set upstream = task.get_upstream_goal_count() %}
+          {% set downstream = task.get_downstream_goal_count() %}
+        {% else %}
+          {% set upstream = task.get_upstream_count() %}
+          {% set downstream = task.get_downstream_count() %}
+        {% endif %}
         {% if upstream > 0 %}
           <span class="task-label label-dependencies">⬅️ {{ upstream }}</span>
         {% endif %}
-        {% set downstream = task.get_downstream_count() %}
         {% if downstream > 0 %}
           <span class="task-label label-dependents">➡️ {{ downstream }}</span>
         {% endif %}
@@ -1544,10 +1454,6 @@
             <span>Awaiting</span>
           </div>
           <div class="graph-legend-item">
-            <div class="graph-legend-dot" style="background:#00897b;"></div>
-            <span>Recurring</span>
-          </div>
-          <div class="graph-legend-item">
             <div class="graph-legend-dot" style="background:#9300ef;"></div>
             <span>Goal</span>
           </div>
@@ -1556,17 +1462,8 @@
             <span>Redundant</span>
           </div>
         </div>
-        <div class="flowchart-controls" style="position:absolute; right:0; display:flex; gap:4px;">
-          <button onclick="zoomFlowchart(1.2)" title="Zoom in">+</button>
-          <button onclick="zoomFlowchart(0.8)" title="Zoom out">−</button>
-          <button onclick="fitFlowchart()" title="Fit to view">Fit</button>
-          <button onclick="resetFlowchartLayout()" title="Reset layout">Reset</button>
-        </div>
       </div>
       <div id="flowchart-container" style="flex:1; background:#fafafa; border-radius:8px; overflow:hidden; position:relative;">
-        <div id="flowchart-instructions" style="position:absolute; bottom:10px; left:10px; background:rgba(255,255,255,0.9); padding:8px 12px; border-radius:6px; font-size:12px; color:#666; z-index:10;">
-          <strong>Tips:</strong> Drag nodes to reposition • Drag from green dots to create edges • Click edge to edit ports/waypoints • Double-click edge to add waypoint
-        </div>
       </div>
     </div>
 
@@ -1662,6 +1559,8 @@
   let justFinishedNodeInteraction = false;  // Flag to prevent SVG click handler race condition
   const DRAG_THRESHOLD = 5;
   const SNAP_THRESHOLD = 15;
+  let selectedNodeIds = new Set();  // Multi-select state
+  let selectionBoxState = null;     // Rubber-band selection state
 
   let calendarInstance = null;
 
@@ -1747,7 +1646,6 @@
     document.getElementById('calendar-view').style.display = 'none';
     document.getElementById('kanban-view').style.display = 'none';
     document.getElementById('flowchart-view').style.display = 'none';
-
     // Remove active class from all buttons
     document.getElementById('btn-calendar').classList.remove('active');
     document.getElementById('btn-kanban').classList.remove('active');
@@ -1821,7 +1719,6 @@
     'Awaiting':  _cs.getPropertyValue('--status-awaiting').trim(),
     'Event':     _cs.getPropertyValue('--status-event').trim(),
     'Goal':      _cs.getPropertyValue('--status-goal').trim(),
-    'Recurring': _cs.getPropertyValue('--status-recurring').trim(),
     'Complete':  _cs.getPropertyValue('--status-complete').trim(),
   };
 
@@ -1833,47 +1730,7 @@
       const response = await fetch('/api/graph-data');
       flowchartData = await response.json();
 
-      // Rebuild node map
-      const nodeMap = {};
-      flowchartNodes = flowchartData.nodes.map(n => {
-        const node = {
-          id: n.id,
-          title: n.title,
-          status: n.status,
-          width: 160,
-          height: 50,
-          x: 0,
-          y: 0,
-          hasCustomPosition: false
-        };
-        nodeMap[n.id] = node;
-        return node;
-      });
-
-      // Apply custom positions
-      if (flowchartData.nodePositions) {
-        flowchartData.nodePositions.forEach(pos => {
-          const node = nodeMap[pos.task_id];
-          if (node) {
-            node.x = pos.x;
-            node.y = pos.y;
-            node.hasCustomPosition = true;
-          }
-        });
-      }
-
-      // Rebuild edges
-      flowchartEdges = flowchartData.edges.map(e => ({
-        ...e,
-        source: nodeMap[e.from],
-        target: nodeMap[e.to],
-        redundant: e.redundant || false,
-        sourcePort: e.sourcePort || null,
-        targetPort: e.targetPort || null,
-        waypoints: e.waypoints || []
-      })).filter(e => e.source && e.target);
-
-      // Recalculate layout
+      // Recalculate layout (rebuilds flowchartNodes and flowchartEdges from flowchartData)
       calculateFlowchartLayout();
 
       // Clean up waypoints
@@ -1895,6 +1752,7 @@
       // Reset selection state
       selectedEdge = null;
       highlightedNodeId = null;
+      selectedNodeIds.clear();
 
     } catch (error) {
       console.error('Error refreshing flowchart:', error);
@@ -1935,7 +1793,7 @@
       .append('svg')
       .attr('width', '100%')
       .attr('height', '100%')
-      .style('cursor', 'grab')
+      .style('cursor', 'default')
       .on('click', (event) => {
         // Ignore if we just finished a node interaction (race condition prevention)
         if (justFinishedNodeInteraction) {
@@ -1953,9 +1811,10 @@
         )) {
           return;
         }
-        // Deselect edge and node when clicking empty space
+        // Deselect edge, node highlight, and multi-selection when clicking empty space
         deselectEdge();
         highlightedNodeId = null;
+        clearNodeSelection();
         // Reset edge styles
         flowchartG.selectAll('path.edge')
           .attr('stroke', d => d.redundant ? '#c62828' : '#555')
@@ -1967,26 +1826,105 @@
             return d3.color(color).darker(0.3).toString();
           })
           .attr('stroke-width', 2);
-      });
-
-    // Add zoom behavior with filter to allow edge and port clicks
-    flowchartZoom = d3.zoom()
-      .scaleExtent([0.1, 4])
-      .filter((event) => {
-        // Only allow wheel events if pinch-to-zoom (ctrlKey); trackpad swipe handled separately
-        if (event.type === 'wheel') return event.ctrlKey;
-        // Block zoom for clicks on edge hitareas, port handles, waypoint handles
+      })
+      .on('mousedown', (event) => {
+        // Only start rubber-band on empty space with left button
+        if (event.button !== 0) return;
         const target = event.target;
-        if (target.classList && (
+        if (target.closest('.node') || (target.classList && (
           target.classList.contains('edge-hitarea') ||
           target.classList.contains('port-handle') ||
           target.classList.contains('waypoint-handle') ||
           target.classList.contains('node-connector')
-        )) {
-          return false;
+        ))) return;
+
+        const svgNode = flowchartSvg.node();
+        const pt = svgNode.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+        const svgPt = pt.matrixTransform(svgNode.getScreenCTM().inverse());
+
+        selectionBoxState = { startX: svgPt.x, startY: svgPt.y, moved: false };
+
+        // Create selection rectangle (in SVG space, above flowchartG)
+        flowchartSvg.append('rect')
+          .attr('class', 'selection-box')
+          .attr('x', svgPt.x)
+          .attr('y', svgPt.y)
+          .attr('width', 0)
+          .attr('height', 0);
+      })
+      .on('mousemove', (event) => {
+        if (!selectionBoxState) return;
+
+        const svgNode = flowchartSvg.node();
+        const pt = svgNode.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+        const svgPt = pt.matrixTransform(svgNode.getScreenCTM().inverse());
+
+        const dx = svgPt.x - selectionBoxState.startX;
+        const dy = svgPt.y - selectionBoxState.startY;
+
+        if (!selectionBoxState.moved && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+          selectionBoxState.moved = true;
         }
-        // Allow zoom for other interactions (panning on empty space)
-        return !event.ctrlKey && !event.button;
+        if (!selectionBoxState.moved) return;
+
+        const x = Math.min(selectionBoxState.startX, svgPt.x);
+        const y = Math.min(selectionBoxState.startY, svgPt.y);
+        const w = Math.abs(dx);
+        const h = Math.abs(dy);
+
+        flowchartSvg.select('rect.selection-box')
+          .attr('x', x).attr('y', y)
+          .attr('width', w).attr('height', h);
+      })
+      .on('mouseup', (event) => {
+        if (!selectionBoxState) return;
+
+        const box = flowchartSvg.select('rect.selection-box');
+
+        if (selectionBoxState.moved) {
+          // Get selection rectangle bounds in SVG space
+          const bx = parseFloat(box.attr('x'));
+          const by = parseFloat(box.attr('y'));
+          const bw = parseFloat(box.attr('width'));
+          const bh = parseFloat(box.attr('height'));
+
+          // Convert box corners to graph coordinates via current transform
+          const transform = d3.zoomTransform(flowchartSvg.node());
+          const graphLeft = (bx - transform.x) / transform.k;
+          const graphTop = (by - transform.y) / transform.k;
+          const graphRight = (bx + bw - transform.x) / transform.k;
+          const graphBottom = (by + bh - transform.y) / transform.k;
+
+          // Find nodes whose centers fall within the box
+          selectedNodeIds.clear();
+          flowchartNodes.forEach(n => {
+            if (n.x >= graphLeft && n.x <= graphRight && n.y >= graphTop && n.y <= graphBottom) {
+              selectedNodeIds.add(n.id);
+            }
+          });
+
+          applySelectionStyling();
+
+          // Prevent the click handler from clearing the selection
+          justFinishedNodeInteraction = true;
+        }
+
+        box.remove();
+        selectionBoxState = null;
+      });
+
+    // Add zoom behavior — only wheel events (pinch-to-zoom); no click-drag panning
+    flowchartZoom = d3.zoom()
+      .scaleExtent([0.1, 4])
+      .filter((event) => {
+        // Only allow wheel events with ctrlKey (pinch-to-zoom)
+        if (event.type === 'wheel') return event.ctrlKey;
+        // Block all mouse-based zoom/pan (panning handled by trackpad wheel events)
+        return false;
       })
       .on('zoom', (event) => {
         flowchartG.attr('transform', event.transform);
@@ -2344,15 +2282,23 @@
       }
     });
 
-    flowchartEdges = flowchartData.edges.map(e => ({
-      ...e,
-      source: nodeMap[e.from],
-      target: nodeMap[e.to],
-      redundant: e.redundant || false,
-      sourcePort: e.sourcePort || null,
-      targetPort: e.targetPort || null,
-      waypoints: e.waypoints || []
-    })).filter(e => e.source && e.target);
+    flowchartEdges = flowchartData.edges.map(e => {
+      const src = nodeMap[e.from];
+      const tgt = nodeMap[e.to];
+      // Only keep edge customizations (ports/waypoints) if BOTH endpoints
+      // have custom positions — otherwise auto-layout may have shifted nodes,
+      // making stored absolute waypoints invalid
+      const keepCustomization = src && tgt && src.hasCustomPosition && tgt.hasCustomPosition;
+      return {
+        ...e,
+        source: src,
+        target: tgt,
+        redundant: e.redundant || false,
+        sourcePort: keepCustomization ? (e.sourcePort || null) : null,
+        targetPort: keepCustomization ? (e.targetPort || null) : null,
+        waypoints: keepCustomization ? (e.waypoints || []) : []
+      };
+    }).filter(e => e.source && e.target);
   }
 
   function renderFlowchartEdges(group) {
@@ -2648,6 +2594,162 @@
 
   let highlightedNodeId = null;
 
+  function clearNodeSelection() {
+    selectedNodeIds.clear();
+    applySelectionStyling();
+  }
+
+  function applySelectionStyling() {
+    flowchartG.selectAll('g.node rect')
+      .attr('stroke', d => {
+        if (selectedNodeIds.has(d.id)) return '#fff';
+        const color = STATUS_COLORS[d.status] || '#999';
+        return d3.color(color).darker(0.3).toString();
+      })
+      .attr('stroke-width', d => selectedNodeIds.has(d.id) ? 3 : 2)
+      .attr('stroke-dasharray', d => selectedNodeIds.has(d.id) ? '6,3' : 'none');
+  }
+
+  // Ctrl+C / Ctrl+V to copy/paste (duplicate) tasks on DAG view
+  let clipboardNodeIds = [];
+
+  document.addEventListener('keydown', async (event) => {
+    if (currentView !== 'flowchart') return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (document.getElementById('task-modal')?.style.display !== 'none') return;
+    if (document.getElementById('modal')?.style.display !== 'none') return;
+
+    const isMeta = event.metaKey || event.ctrlKey;
+
+    if (isMeta && event.key === 'c') {
+      // Copy highlighted or selected nodes
+      const ids = selectedNodeIds.size > 0
+        ? [...selectedNodeIds]
+        : (highlightedNodeId ? [highlightedNodeId] : []);
+      if (ids.length > 0) {
+        event.preventDefault();
+        clipboardNodeIds = ids;
+      }
+      return;
+    }
+
+    if (isMeta && event.key === 'v') {
+      if (clipboardNodeIds.length === 0) return;
+      event.preventDefault();
+      for (const taskId of clipboardNodeIds) {
+        try {
+          await fetch(`/task/${taskId}/duplicate`, { method: 'POST' });
+        } catch (error) {
+          console.error('Error duplicating task:', error);
+        }
+      }
+      await refreshFlowchart();
+      return;
+    }
+  });
+
+  // Arrow keys to nudge selected/highlighted nodes on DAG view
+  let arrowSaveTimer = null;
+  document.addEventListener('keydown', (event) => {
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    if (currentView !== 'flowchart') return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (document.getElementById('task-modal')?.style.display !== 'none') return;
+    if (document.getElementById('modal')?.style.display !== 'none') return;
+
+    const ids = selectedNodeIds.size > 0
+      ? [...selectedNodeIds]
+      : (highlightedNodeId ? [highlightedNodeId] : []);
+    if (ids.length === 0) return;
+
+    event.preventDefault();
+    const step = event.shiftKey ? 50 : 10;
+    let dx = 0, dy = 0;
+    if (event.key === 'ArrowLeft')  dx = -step;
+    if (event.key === 'ArrowRight') dx = step;
+    if (event.key === 'ArrowUp')    dy = -step;
+    if (event.key === 'ArrowDown')  dy = step;
+
+    ids.forEach(id => {
+      const node = flowchartNodes.find(n => n.id === id);
+      if (!node) return;
+      node.x += dx;
+      node.y += dy;
+      node.hasCustomPosition = true;
+      // Update DOM position
+      flowchartG.selectAll('g.node')
+        .filter(d => d.id === id)
+        .attr('transform', `translate(${node.x - node.width/2}, ${node.y - node.height/2})`);
+      updateConnectedEdges(node);
+    });
+
+    // Debounce saving positions to avoid flooding the server on held keys
+    clearTimeout(arrowSaveTimer);
+    arrowSaveTimer = setTimeout(() => {
+      ids.forEach(id => {
+        const node = flowchartNodes.find(n => n.id === id);
+        if (node) saveNodePosition(node);
+      });
+    }, 400);
+  });
+
+  // Backspace to delete selected nodes or edge on DAG view
+  document.addEventListener('keydown', async (event) => {
+    if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+    if (currentView !== 'flowchart') return;
+
+    // Don't intercept if user is typing in an input/textarea or modal is open
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (document.getElementById('task-modal')?.style.display !== 'none') return;
+    if (document.getElementById('modal')?.style.display !== 'none') return;
+
+    // Delete selected edge
+    if (selectedEdge) {
+      event.preventDefault();
+      const sourceId = selectedEdge.source.id;
+      const targetId = selectedEdge.target.id;
+      try {
+        const response = await fetch(`/task/${targetId}/remove-dependency/${sourceId}`, { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+          deselectEdge();
+          await refreshFlowchart();
+        }
+      } catch (error) {
+        console.error('Error removing dependency:', error);
+      }
+      return;
+    }
+
+    // Delete selected nodes (multi-select or single highlighted)
+    const idsToDelete = selectedNodeIds.size > 0
+      ? [...selectedNodeIds]
+      : (highlightedNodeId ? [highlightedNodeId] : []);
+
+    if (idsToDelete.length > 0) {
+      event.preventDefault();
+      selectedNodeIds.clear();
+      highlightedNodeId = null;
+      for (const taskId of idsToDelete) {
+        try {
+          const response = await fetch(`/task/${taskId}/quick-delete`, { method: 'POST' });
+          const data = await response.json();
+          if (data.success) {
+            deleteToast.setLastTaskId(data.task_id);
+          }
+        } catch (error) {
+          console.error('Error deleting task:', error);
+        }
+      }
+      showDeleteToast();
+      await refreshFlowchart();
+      return;
+    }
+  });
+
   function highlightNodeEdges(nodeId) {
     // Clear any edge selection first
     if (selectedEdge) {
@@ -2707,14 +2809,27 @@
   // --- Node Dragging with Snap-to-Grid ---
 
   function onNodeDragStart(event, d) {
-    // Store initial mouse position relative to node center
+    const isGroupDrag = selectedNodeIds.has(d.id) && selectedNodeIds.size > 1;
+
+    // Store initial positions for all nodes being dragged
+    const groupStartPositions = {};
+    if (isGroupDrag) {
+      flowchartNodes.forEach(n => {
+        if (selectedNodeIds.has(n.id)) {
+          groupStartPositions[n.id] = { x: n.x, y: n.y };
+        }
+      });
+    }
+
     dragState = {
       startNodeX: d.x,
       startNodeY: d.y,
       startMouseX: event.x,
       startMouseY: event.y,
       node: d,
-      moved: false
+      moved: false,
+      isGroupDrag,
+      groupStartPositions
     };
     d3.select(this).style('cursor', 'grabbing').raise();
     // Deselect any selected edge
@@ -2733,23 +2848,37 @@
 
     if (!dragState.moved) return;
 
-    // New position = original position + mouse delta (keeps node centered on cursor)
-    const newX = dragState.startNodeX + mouseDx;
-    const newY = dragState.startNodeY + mouseDy;
+    if (dragState.isGroupDrag) {
+      // Move all selected nodes by the same delta
+      flowchartNodes.forEach(n => {
+        const startPos = dragState.groupStartPositions[n.id];
+        if (!startPos) return;
+        n.x = startPos.x + mouseDx;
+        n.y = startPos.y + mouseDy;
+      });
 
-    // Calculate snap position
-    const snapped = calculateSnapPosition(newX, newY, d);
-    d.x = snapped.x;
-    d.y = snapped.y;
+      // Update all selected node positions in the DOM
+      flowchartG.selectAll('g.node')
+        .filter(n => selectedNodeIds.has(n.id))
+        .attr('transform', n => `translate(${n.x - n.width/2}, ${n.y - n.height/2})`);
 
-    // Update node position
-    d3.select(this).attr('transform', `translate(${d.x - d.width/2}, ${d.y - d.height/2})`);
+      // Update edges connected to any selected node
+      flowchartNodes.forEach(n => {
+        if (selectedNodeIds.has(n.id)) updateConnectedEdges(n);
+      });
+    } else {
+      // Single node drag with snap
+      const newX = dragState.startNodeX + mouseDx;
+      const newY = dragState.startNodeY + mouseDy;
 
-    // Update connected edges
-    updateConnectedEdges(d);
+      const snapped = calculateSnapPosition(newX, newY, d);
+      d.x = snapped.x;
+      d.y = snapped.y;
 
-    // Draw alignment guides
-    drawAlignmentGuides(snapped.guides);
+      d3.select(this).attr('transform', `translate(${d.x - d.width/2}, ${d.y - d.height/2})`);
+      updateConnectedEdges(d);
+      drawAlignmentGuides(snapped.guides);
+    }
   }
 
   function onNodeDragEnd(event, d) {
@@ -2759,9 +2888,18 @@
     flowchartG.selectAll('.alignment-guide').remove();
 
     if (dragState && dragState.moved) {
-      // Save position to server
-      saveNodePosition(d);
-      d.hasCustomPosition = true;
+      if (dragState.isGroupDrag) {
+        // Save positions for all selected nodes
+        flowchartNodes.forEach(n => {
+          if (selectedNodeIds.has(n.id)) {
+            saveNodePosition(n);
+            n.hasCustomPosition = true;
+          }
+        });
+      } else {
+        saveNodePosition(d);
+        d.hasCustomPosition = true;
+      }
     } else {
       // Was a click, not a drag - toggle edge highlighting
       highlightNodeEdges(d.id);
@@ -2775,10 +2913,10 @@
   function calculateSnapPosition(x, y, excludeNode) {
     let snapX = x, snapY = y;
     const guides = [];
+    const others = flowchartNodes.filter(n => n.id !== excludeNode.id);
 
-    flowchartNodes.forEach(n => {
-      if (n.id === excludeNode.id) return;
-
+    // --- Alignment snap (existing) ---
+    others.forEach(n => {
       // Check horizontal alignment (X coordinates match)
       if (Math.abs(n.x - x) < SNAP_THRESHOLD) {
         snapX = n.x;
@@ -2819,7 +2957,7 @@
           .attr('stroke-dasharray', '5,5')
           .attr('stroke-width', 1)
           .style('pointer-events', 'none');
-      } else {
+      } else if (g.type === 'horizontal') {
         flowchartG.append('line')
           .attr('class', 'alignment-guide')
           .attr('x1', g.x1).attr('y1', g.y)
@@ -2920,8 +3058,7 @@
   // --- Edge Selection and Editing ---
 
   function onEdgeClick(edge) {
-    // Prevent SVG click handler from firing right after
-    justFinishedNodeInteraction = true;
+    // Note: SVG click handler is already blocked by stopPropagation on the hitarea
 
     // Toggle edge selection
     const isCurrentlySelected = selectedEdge &&
@@ -3044,6 +3181,29 @@
 
     const sPos = getPortPosition(edge.source, edge.sourcePort);
     const tPos = getPortPosition(edge.target, edge.targetPort);
+
+    // Remove stale waypoints that are far outside the edge's bounding box.
+    // This catches waypoints saved when nodes were at different positions.
+    const margin = 200; // generous margin for intentional routing
+    const bbMinX = Math.min(sPos.x, tPos.x) - margin;
+    const bbMaxX = Math.max(sPos.x, tPos.x) + margin;
+    const bbMinY = Math.min(sPos.y, tPos.y) - margin;
+    const bbMaxY = Math.max(sPos.y, tPos.y) + margin;
+
+    const inBounds = edge.waypoints.filter(wp =>
+      wp.x >= bbMinX && wp.x <= bbMaxX && wp.y >= bbMinY && wp.y <= bbMaxY
+    );
+    if (inBounds.length < edge.waypoints.length) {
+      edge.waypoints = inBounds;
+      // Also reset ports to defaults when stale waypoints are cleared,
+      // since custom ports were set to work with those waypoints
+      if (inBounds.length === 0) {
+        edge.sourcePort = null;
+        edge.targetPort = null;
+      }
+    }
+
+    if (edge.waypoints.length === 0) return;
 
     // Remove duplicate waypoints (same or very close position)
     const deduped = [];
@@ -3623,15 +3783,8 @@
   function onConnectorDrag(event, d) {
     if (!edgeCreationState) return;
 
-    // Get position in graph coordinates
-    const nodeGroup = d3.select(this.parentNode);
-    const transform = nodeGroup.attr('transform');
-    const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-    const nodeX = parseFloat(match[1]);
-    const nodeY = parseFloat(match[2]);
-
-    const mouseX = nodeX + event.x;
-    const mouseY = nodeY + event.y;
+    // Get mouse position in flowchartG coordinate space
+    const [mouseX, mouseY] = d3.pointer(event.sourceEvent, flowchartG.node());
 
     // Update preview line
     flowchartG.select('.edge-preview')
@@ -3645,15 +3798,8 @@
     // Remove preview line
     flowchartG.select('.edge-preview').remove();
 
-    // Get final position
-    const nodeGroup = d3.select(this.parentNode);
-    const transform = nodeGroup.attr('transform');
-    const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-    const nodeX = parseFloat(match[1]);
-    const nodeY = parseFloat(match[2]);
-
-    const mouseX = nodeX + event.x;
-    const mouseY = nodeY + event.y;
+    // Get mouse position in flowchartG coordinate space
+    const [mouseX, mouseY] = d3.pointer(event.sourceEvent, flowchartG.node());
 
     // Find target node at drop position
     const targetNode = findNodeAtPosition(mouseX, mouseY);
@@ -3900,35 +4046,7 @@
   }
 
 
-  // Recurring task options
-  function toggleRecurringOptions(prefix) {
-    const checkbox = document.getElementById(prefix + '-recurring-checkbox');
-    const options = document.getElementById(prefix + '-recurring-options');
-    options.style.display = checkbox.checked ? 'block' : 'none';
-    if (checkbox.checked) {
-      toggleFrequencyOptions(prefix);
-    }
-  }
-
-  function toggleFrequencyOptions(prefix) {
-    const frequency = document.getElementById(prefix + '-recurrence-frequency').value;
-    const weeklyOptions = document.getElementById(prefix + '-weekly-options');
-    const monthlyOptions = document.getElementById(prefix + '-monthly-options');
-
-    if (weeklyOptions) weeklyOptions.style.display = frequency === 'weekly' ? 'block' : 'none';
-    if (monthlyOptions) monthlyOptions.style.display = frequency === 'monthly' ? 'block' : 'none';
-  }
-
-  function toggleEndOptions(prefix) {
-    const endType = document.querySelector('input[name="recurrence_end_type"]:checked').value;
-    const countInput = document.getElementById(prefix + '-end-count');
-    const dateInput = document.getElementById(prefix + '-end-date');
-
-    if (countInput) countInput.disabled = endType !== 'after';
-    if (dateInput) dateInput.disabled = endType !== 'on_date';
-  }
-
-  // Enable/disable fixed_time based on scheduled datetime (recurring is always enabled)
+  // Enable/disable fixed_time based on scheduled datetime
   function updateScheduleDependentOptions(prefix) {
     const scheduledInput = document.getElementById(prefix + '-scheduled-datetime');
     const hasScheduled = scheduledInput && scheduledInput.value;
@@ -4037,7 +4155,14 @@
     async function undo(endpoint) {
       if (!lastTaskId) return;
       const result = await apiFetch(`/task/${lastTaskId}/${endpoint}`, { method: 'POST' }, 'Failed to undo');
-      if (result?.data?.success) { hide(); window.location.reload(); }
+      if (result?.data?.success) {
+        hide();
+        if (currentView === 'flowchart') {
+          await refreshFlowchart();
+        } else {
+          window.location.reload();
+        }
+      }
       else if (result) alert('Failed to undo');
     }
 
@@ -4094,8 +4219,15 @@
       const response = await fetch(`/task/${taskId}/quick-delete`, { method: 'POST' });
       const data = await response.json();
       if (data.success) {
-        deleteToast.storeForReload(data.task_id);
-        window.location.reload();
+        if (currentView === 'flowchart') {
+          closeModal();
+          deleteToast.setLastTaskId(data.task_id);
+          showDeleteToast();
+          await refreshFlowchart();
+        } else {
+          deleteToast.storeForReload(data.task_id);
+          window.location.reload();
+        }
       } else {
         alert('Failed to delete task');
       }
@@ -4131,37 +4263,7 @@
     else if (result) alert('Failed to remove dependency');
   }
 
-  // Recurring task options for edit modal
-  function toggleRecurringOptionsEdit() {
-    const checkbox = document.getElementById('edit-recurring-checkbox');
-    const options = document.getElementById('edit-recurring-options');
-    if (checkbox && options) {
-      options.style.display = checkbox.checked ? 'block' : 'none';
-    }
-  }
-
-  function toggleFrequencyOptionsEdit() {
-    const frequency = document.getElementById('edit-recurrence-frequency');
-    const weeklyOptions = document.getElementById('edit-weekly-options');
-    const monthlyOptions = document.getElementById('edit-monthly-options');
-    if (frequency) {
-      if (weeklyOptions) weeklyOptions.style.display = frequency.value === 'weekly' ? 'block' : 'none';
-      if (monthlyOptions) monthlyOptions.style.display = frequency.value === 'monthly' ? 'block' : 'none';
-    }
-  }
-
-  function toggleEndOptionsEdit() {
-    const endTypeRadio = document.querySelector('#edit-recurring-options input[name="recurrence_end_type"]:checked');
-    const countInput = document.getElementById('edit-end-count');
-    const dateInput = document.getElementById('edit-end-date');
-    if (endTypeRadio) {
-      const endType = endTypeRadio.value;
-      if (countInput) countInput.disabled = endType !== 'after';
-      if (dateInput) dateInput.disabled = endType !== 'on_date';
-    }
-  }
-
-  // Enable/disable fixed_time based on scheduled datetime (edit modal) - recurring is always enabled
+  // Enable/disable fixed_time based on scheduled datetime (edit modal)
   function updateScheduleDependentOptionsEdit() {
     const scheduledInput = document.getElementById('edit-scheduled-datetime');
     const hasScheduled = scheduledInput && scheduledInput.value;
@@ -4368,8 +4470,7 @@
   'Blocked': 2,
   'Event': 3,
   'Awaiting': 4,
-  'Recurring': 5,
-  'Goal': 6
+  'Goal': 5
 };
 
 function getTaskSortRank(task) {
@@ -4765,15 +4866,12 @@ function getTaskSortRank(task) {
     // Check checkboxes - these override dependency-based status
     const isGoal = document.querySelector('#create-task-form input[name="unknown_dependencies"]')?.checked;
     const isAwaiting = document.querySelector('#create-task-form input[name="awaiting"]')?.checked;
-    const isRecurring = document.getElementById('create-recurring-checkbox')?.checked;
     const isEvent = document.getElementById('create-fixed-time-checkbox')?.checked;
 
     if (isGoal) {
       status = 'Goal';
     } else if (isAwaiting) {
       status = 'Awaiting';
-    } else if (isRecurring) {
-      status = 'Recurring';
     } else if (isEvent) {
       status = 'Event';
     }
@@ -4813,6 +4911,63 @@ function getTaskSortRank(task) {
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('modal').style.display = 'block';
   }
+
+  // Intercept create-task form submission on DAG view to avoid page reload
+  document.getElementById('create-task-form').addEventListener('submit', async function(event) {
+    if (currentView !== 'flowchart') return; // Let normal form submission happen for other views
+
+    event.preventDefault();
+    const form = this;
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch('/create-task', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await response.json();
+      if (data.success) {
+        // Reset the form
+        form.reset();
+        selectedCreateDeps.clear();
+        selectedCreateDependents.clear();
+        updateCreateDepsDisplay();
+        updateCreateDependentsDisplay();
+        // Close modal and refresh DAG
+        closeModal();
+        await refreshFlowchart();
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
+  });
+
+  // Intercept edit-task form submission on DAG view to avoid page reload
+  document.getElementById('task-modal').addEventListener('submit', async function(event) {
+    if (currentView !== 'flowchart') return; // Let normal form submission happen for other views
+
+    const form = event.target;
+    if (!form.action || !form.action.includes('/update-task/')) return; // Only intercept update-task forms
+
+    event.preventDefault();
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await response.json();
+      if (data.success) {
+        closeModal();
+        await refreshFlowchart();
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  });
 
   function viewTaskOnGraph(taskId) {
     // Close task modal
@@ -4856,6 +5011,7 @@ function getTaskSortRank(task) {
       }
     }, 50);
   }
+
 
 </script>
 
